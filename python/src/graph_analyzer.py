@@ -71,8 +71,21 @@ class BrainGraphAnalyzer:
         query = "SELECT * FROM Thoughts"
         params = []
         if brain_id:
-            query += " WHERE BrainId = ?"
-            params.append(brain_id)
+            # First try exact match
+            cursor.execute("SELECT 1 FROM Thoughts WHERE BrainId = ? LIMIT 1", (brain_id,))
+            if cursor.fetchone():
+                query += " WHERE BrainId = ?"
+                params.append(brain_id)
+            else:
+                # If not found, check if there's only one brain and use it
+                cursor.execute("SELECT COUNT(DISTINCT BrainId) as count FROM Thoughts")
+                count = cursor.fetchone()[0]
+                if count == 1:
+                    logger.info(f"Brain ID {brain_id} not found, using the only brain in database")
+                    # No filter needed - load all thoughts
+                else:
+                    logger.warning(f"Brain ID {brain_id} not found in database with {count} brains")
+                    # Still try to load without filter
             
         cursor.execute(query, params)
         

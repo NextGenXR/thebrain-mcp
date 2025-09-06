@@ -1,10 +1,21 @@
 ---
-description: Rules for the Brain MCP Server
+description: Rules for the Brain MCP Server and Brain API and Database
 globs:
 alwaysApply: true
 ---
 
-# General Rules for The Brain MCP Server
+# General Rules for the Brain MCP Server and Brain API and Database
 
 For the Python version of the MCP server, keep all relevant files in the 'python/' folder and sub-folders. This includes the doc/ and /memory_bank folders.
 
+## Local Database Use
+
+In Windows, the default location for The Brain database and files is `%USERPROFILE%\Brains`
+
+The Brain app needs to be running and the brain open in the app to sync the databases and files with the cloud.
+
+You can check to see if anything recent has changed on the cloud.
+
+## The Brain version 15
+
+The Brain 15 now allows the user to not sync attachments to the local computer, so attachments may not be available unless this option is disabled.

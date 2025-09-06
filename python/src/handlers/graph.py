@@ -9,6 +9,7 @@ import logging
 from pathlib import Path
 from ..graph_analyzer import BrainGraphAnalyzer
 from ..hybrid_brain_manager import HybridBrainManager
+from ..path_utils import find_brain_database, get_brain_path_from_env
 
 logger = logging.getLogger(__name__)
 
@@ -28,27 +29,40 @@ async def get_or_create_analyzer(api, brain_id: str) -> Optional[BrainGraphAnaly
         
         if manager and manager.local_db_path:
             analyzer = BrainGraphAnalyzer(manager.local_db_path)
-            analyzer.load_graph(brain_id)
-            _analyzer_cache[brain_id] = analyzer
-            return analyzer
+            # Don't filter by brain_id - local DB contains all thoughts
+            graph = analyzer.load_graph()
+            if graph.number_of_nodes() > 0:
+                _analyzer_cache[brain_id] = analyzer
+                logger.info(f"Loaded graph via hybrid manager: {graph.number_of_nodes()} nodes from {manager.local_db_path}")
+                return analyzer
+            else:
+                logger.warning(f"Graph loaded but has no nodes from {manager.local_db_path}")
     except Exception as e:
         logger.warning(f"Could not create analyzer from hybrid manager: {e}")
     
-    # Try default paths
-    brains_dir = Path.home() / "Brains"
-    if brains_dir.exists():
-        for brain_subdir in brains_dir.iterdir():
-            if brain_subdir.is_dir():
-                db_path = brain_subdir / "Brain.db"
-                if db_path.exists():
-                    try:
-                        analyzer = BrainGraphAnalyzer(str(db_path))
-                        graph = analyzer.load_graph(brain_id)
-                        if graph.number_of_nodes() > 0:
-                            _analyzer_cache[brain_id] = analyzer
-                            return analyzer
-                    except:
-                        continue
+    # Try to find database using our path utilities
+    try:
+        # First check environment variable
+        custom_path = get_brain_path_from_env()
+        db_path = find_brain_database(custom_path=str(custom_path) if custom_path else None)
+        
+        if db_path:
+            try:
+                analyzer = BrainGraphAnalyzer(str(db_path))
+                # Don't filter by brain_id for local database - it contains all data
+                graph = analyzer.load_graph()  # Load all thoughts
+                if graph.number_of_nodes() > 0:
+                    _analyzer_cache[brain_id] = analyzer
+                    logger.info(f"Loaded graph from {db_path}: {graph.number_of_nodes()} nodes")
+                    return analyzer
+                else:
+                    logger.warning(f"Graph loaded but has no nodes from {db_path}")
+            except Exception as e:
+                logger.error(f"Failed to load graph from {db_path}: {e}")
+        else:
+            logger.warning("Could not find Brain database in any standard location")
+    except Exception as e:
+        logger.error(f"Error in path finding: {e}")
     
     return None
 
@@ -70,7 +84,7 @@ async def analyze_brain_graph(api, args: Dict[str, Any]) -> Dict[str, Any]:
         if not analyzer:
             return {
                 "success": False,
-                "error": "Could not access local database for graph analysis"
+                "error": "Could not access local database. Please ensure TheBrain.exe is running and your database is synced. Check that THEBRAIN_LOCAL_DB_PATH is set correctly in your .env file or that your database is in the default location (~/Brains)."
             }
         
         if analysis_type == "statistics":
@@ -195,7 +209,7 @@ async def find_knowledge_paths(api, args: Dict[str, Any]) -> Dict[str, Any]:
         if not analyzer:
             return {
                 "success": False,
-                "error": "Could not access local database for graph analysis"
+                "error": "Could not access local database. Please ensure TheBrain.exe is running and your database is synced. Check that THEBRAIN_LOCAL_DB_PATH is set correctly in your .env file or that your database is in the default location (~/Brains)."
             }
         
         # Find shortest path
@@ -244,7 +258,7 @@ async def get_thought_neighborhood(api, args: Dict[str, Any]) -> Dict[str, Any]:
         if not analyzer:
             return {
                 "success": False,
-                "error": "Could not access local database for graph analysis"
+                "error": "Could not access local database. Please ensure TheBrain.exe is running and your database is synced. Check that THEBRAIN_LOCAL_DB_PATH is set correctly in your .env file or that your database is in the default location (~/Brains)."
             }
         
         # Get neighborhood subgraph
@@ -303,7 +317,7 @@ async def find_knowledge_gaps(api, args: Dict[str, Any]) -> Dict[str, Any]:
         if not analyzer:
             return {
                 "success": False,
-                "error": "Could not access local database for graph analysis"
+                "error": "Could not access local database. Please ensure TheBrain.exe is running and your database is synced. Check that THEBRAIN_LOCAL_DB_PATH is set correctly in your .env file or that your database is in the default location (~/Brains)."
             }
         
         import networkx as nx
@@ -400,7 +414,7 @@ async def export_graph_visualization(api, args: Dict[str, Any]) -> Dict[str, Any
         if not analyzer:
             return {
                 "success": False,
-                "error": "Could not access local database for graph analysis"
+                "error": "Could not access local database. Please ensure TheBrain.exe is running and your database is synced. Check that THEBRAIN_LOCAL_DB_PATH is set correctly in your .env file or that your database is in the default location (~/Brains)."
             }
         
         if output_format == "graphml":

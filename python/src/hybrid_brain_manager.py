@@ -150,14 +150,32 @@ class HybridBrainManager:
         """Verify the local database contains the specified brain."""
         try:
             cursor = self.db_conn.cursor()
-            # Use LIMIT 1 for faster verification - we just need to know if ANY thought exists
+            
+            # First check if the exact brain_id exists
             cursor.execute(
                 "SELECT 1 FROM Thoughts WHERE BrainId = ? LIMIT 1", 
                 (brain_id,)
             )
             result = cursor.fetchone()
-            return result is not None
-        except sqlite3.Error:
+            if result:
+                return True
+            
+            # If not found, check what brain IDs actually exist
+            cursor.execute("SELECT DISTINCT BrainId FROM Thoughts LIMIT 1")
+            actual_brain = cursor.fetchone()
+            if actual_brain:
+                actual_id = actual_brain[0]
+                logger.info(f"Brain ID mismatch - requested: {brain_id}, actual: {actual_id}")
+                # If there's only one brain in the database, use it
+                cursor.execute("SELECT COUNT(DISTINCT BrainId) FROM Thoughts")
+                count = cursor.fetchone()[0]
+                if count == 1:
+                    logger.info(f"Using the only brain in database: {actual_id}")
+                    return True
+            
+            return False
+        except sqlite3.Error as e:
+            logger.error(f"Error verifying brain ID: {e}")
             return False
     
     async def download_and_index_brain(self, brain_id: str) -> bool:

@@ -33,7 +33,8 @@ networkx>=3.0
 pandas>=2.0.0
 matplotlib>=3.5.0
 
-# Optional but recommended for advanced features
-# python-louvain>=0.16  # Community detection
+# Optional but recommended for advanced graph analysis:
+# scipy>=1.10.0  # For PageRank algorithm
+# python-louvain>=0.16  # For community detection
 # pyvis>=0.3.0  # Interactive visualization
 # plotly>=5.0.0  # Advanced plotting
