@@ -16,9 +16,7 @@ from mcp.server.stdio import stdio_server
 from mcp.types import (
     Tool,
     TextContent,
-    CallToolResult,
-    McpError,
-    ErrorCode
+    CallToolResult
 )
 
 from src.api_client import TheBrainAPI
@@ -34,7 +32,7 @@ api: Optional[TheBrainAPI] = None
 active_brain_id: Optional[str] = None
 
 
-def format_tool_result(result: Any) -> CallToolResult:
+def format_tool_result(result: Any) -> list:
     """
     Format tool results according to MCP protocol.
     
@@ -42,7 +40,7 @@ def format_tool_result(result: Any) -> CallToolResult:
         result: The result from a handler function
         
     Returns:
-        Formatted CallToolResult with content array
+        List of content items for CallToolResult
     """
     # Convert result to string
     if isinstance(result, str):
@@ -55,9 +53,8 @@ def format_tool_result(result: Any) -> CallToolResult:
     # Ensure text_content is always a string
     text_content = str(text_content)
     
-    return CallToolResult(
-        content=[TextContent(type="text", text=text_content)]
-    )
+    # Return list of TextContent objects
+    return [TextContent(type="text", text=text_content)]
 
 
 async def handle_list_tools() -> list[Tool]:
@@ -75,7 +72,7 @@ async def handle_list_tools() -> list[Tool]:
     return tools
 
 
-async def handle_call_tool(name: str, arguments: Dict[str, Any]) -> CallToolResult:
+async def handle_call_tool(name: str, arguments: Dict[str, Any]) -> list:
     """
     Handle tool execution.
     
@@ -84,14 +81,19 @@ async def handle_call_tool(name: str, arguments: Dict[str, Any]) -> CallToolResu
         arguments: The arguments for the tool
         
     Returns:
-        Formatted tool result
+        List of content items for tool result
     """
     global active_brain_id
+    
+    # Debug logging
+    print(f"[DEBUG] Tool called: {name}", file=sys.stderr)
+    print(f"[DEBUG] Arguments: {arguments}", file=sys.stderr)
     
     try:
         # Add active brain ID to args if not specified
         if active_brain_id and "brainId" not in arguments:
             arguments["brainId"] = active_brain_id
+            print(f"[DEBUG] Added active brain ID: {active_brain_id}", file=sys.stderr)
         
         result = None
         
@@ -161,15 +163,17 @@ async def handle_call_tool(name: str, arguments: Dict[str, Any]) -> CallToolResu
         elif name == "get_modifications":
             result = await handlers.get_modifications(api, arguments)
         else:
-            raise McpError(ErrorCode.MethodNotFound, f"Unknown tool: {name}")
+            raise ValueError(f"Unknown tool: {name}")
+        
+        # Debug logging
+        print(f"[DEBUG] Tool {name} result: {result}", file=sys.stderr)
         
         # Format the result according to MCP protocol
         return format_tool_result(result)
         
-    except McpError:
-        raise
     except Exception as e:
-        print(f"Error executing tool {name}: {e}", file=sys.stderr)
+        print(f"[ERROR] Error executing tool {name}: {e}", file=sys.stderr)
+        print(f"[ERROR] Full exception: {type(e).__name__}: {e}", file=sys.stderr)
         # Return error in MCP format
         return format_tool_result({
             "success": False,
@@ -187,11 +191,15 @@ async def main():
         print("Error: THEBRAIN_API_KEY environment variable is required", file=sys.stderr)
         sys.exit(1)
     
+    print(f"[DEBUG] API key loaded: {api_key[:8]}...{api_key[-4:]}", file=sys.stderr)
+    
     # Initialize API client
     api = TheBrainAPI(api_key)
     
     # Set default brain ID if provided
     active_brain_id = os.getenv("THEBRAIN_DEFAULT_BRAIN_ID")
+    if active_brain_id:
+        print(f"[DEBUG] Default brain ID set: {active_brain_id}", file=sys.stderr)
     
     # Create and configure the server
     server = Server("thebrain-mcp")
@@ -202,7 +210,7 @@ async def main():
         return await handle_list_tools()
     
     @server.call_tool()
-    async def call_tool(name: str, arguments: Dict[str, Any]) -> CallToolResult:
+    async def call_tool(name: str, arguments: Dict[str, Any]) -> list:
         """Handle call_tool request."""
         return await handle_call_tool(name, arguments)
     

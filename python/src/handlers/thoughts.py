@@ -2,7 +2,58 @@
 Thought operation handlers for TheBrain MCP server.
 """
 
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
+
+
+async def find_thought_by_name(api, brain_id: str, name: str, start_thought_id: Optional[str] = None, max_depth: int = 3) -> Optional[Dict[str, Any]]:
+    """
+    Helper function to find a thought by exact name using breadth-first search.
+    Since search API doesn't work well for exact names, this traverses the graph.
+    """
+    try:
+        # If no starting point, use the home thought
+        if not start_thought_id:
+            brain = await api.get_brain(brain_id)
+            start_thought_id = brain.get("homeThoughtId")
+            if not start_thought_id:
+                return None
+        
+        # Keep track of visited thoughts to avoid cycles
+        visited = set()
+        queue = [(start_thought_id, 0)]  # (thought_id, depth)
+        
+        while queue:
+            current_id, depth = queue.pop(0)
+            
+            # Skip if we've already visited this thought or exceeded max depth
+            if current_id in visited or depth > max_depth:
+                continue
+            visited.add(current_id)
+            
+            # Get the graph for the current thought
+            try:
+                graph = await api.get_thought_graph(brain_id, current_id, include_siblings=False)
+            except:
+                continue
+            
+            # Check the active/central thought
+            active = graph.get("activeThought", {})
+            if active.get("name") == name:
+                return active
+            
+            # Check all connected thoughts
+            for connection_type in ["parents", "children", "jumps"]:
+                thoughts = graph.get(connection_type, [])
+                for thought in thoughts:
+                    if thought.get("name") == name:
+                        return thought
+                    # Add to queue for deeper search
+                    if depth < max_depth and thought.get("id"):
+                        queue.append((thought.get("id"), depth + 1))
+        
+        return None
+    except Exception:
+        return None
 
 
 async def list_brains(api) -> Dict[str, Any]:
@@ -14,11 +65,17 @@ async def list_brains(api) -> Dict[str, Any]:
             "brains": [
                 {
                     "id": brain.get("id"),
+                    "brainId": brain.get("id"),  # Include both for compatibility
                     "name": brain.get("name"),
                     "homeThoughtId": brain.get("homeThoughtId"),
+                    # Include any additional fields that might be useful
+                    "description": brain.get("description"),
+                    "createdDateTime": brain.get("createdDateTime"),
+                    "modifiedDateTime": brain.get("modifiedDateTime"),
                 }
                 for brain in brains
             ],
+            "count": len(brains),
         }
     except Exception as e:
         return {
@@ -228,26 +285,100 @@ async def search_thoughts(api, args: Dict[str, Any]) -> Dict[str, Any]:
             brain_id, query_text, max_results, only_search_thought_names
         )
         
-        # Process search results
+        # Debug logging (can be enabled if needed)
+        # import sys
+        # print(f"[DEBUG] Search query: '{query_text}', onlyNames={only_search_thought_names}, results={len(results) if results else 0}", file=sys.stderr)
+        
+        # Process search results - handle both thoughts and attachments
         thoughts = []
+        attachments = []
+        notes = []
+        
         for result in results:
-            thoughts.append({
-                "id": result.get("id"),
-                "brainId": result.get("brainId"),
-                "name": result.get("name"),
-                "label": result.get("label"),
-                "kind": result.get("kind"),
-                "creationDateTime": result.get("creationDateTime"),
-                "modificationDateTime": result.get("modificationDateTime"),
-                "matchType": result.get("matchType"),
-                "score": result.get("score"),
-            })
+            # Check the search result type and entity type
+            # searchResultType: 1=Thought, 2=Note?, 3=Link?, 4=Attachment
+            # entityType: 1=?, 2=Thought, 3=?, 4=Attachment
+            result_type = result.get("searchResultType", 1)
+            entity_type = result.get("entityType")
+            
+            if result_type == 4 or entity_type == 4:
+                # This is an attachment result
+                attachment_id = result.get("attachmentId")
+                source_id = result.get("sourceId")  # Parent thought ID
+                
+                attachments.append({
+                    "attachmentId": attachment_id,
+                    "thoughtId": source_id,  # Parent thought
+                    "name": result.get("name"),
+                    "sourceType": result.get("sourceType"),  # 1=File, 2=URL
+                    "brainId": result.get("brainId") or brain_id,
+                    "brainName": result.get("brainName"),
+                    "type": "attachment",
+                })
+            elif entity_type == 2 or result_type == 1:
+                # This is likely a thought result
+                thought_id = result.get("id") or result.get("thoughtId")
+                thought_name = result.get("name")
+                
+                # For entity_type=2 results, generate a placeholder ID if missing
+                if not thought_id and thought_name:
+                    # This is a thought found by name but without ID in search results
+                    # print(f"[INFO] Found thought by name without ID: {thought_name}", file=sys.stderr)
+                    thought_id = f"name:{thought_name}"  # Placeholder to indicate name-based result
+                
+                if thought_id:
+                    thoughts.append({
+                        "id": thought_id,
+                        "thoughtId": thought_id,  # Include both for compatibility
+                        "brainId": result.get("brainId") or brain_id,
+                        "name": thought_name,
+                        "label": result.get("label"),
+                        "kind": result.get("kind"),
+                        "creationDateTime": result.get("creationDateTime"),
+                        "modificationDateTime": result.get("modificationDateTime"),
+                        "matchType": result.get("matchType"),
+                        "score": result.get("score"),
+                        "typeId": result.get("typeId"),
+                        "acType": result.get("acType"),
+                        "entityType": entity_type,
+                        "searchResultType": result_type,
+                        "type": "thought",
+                        "needsIdLookup": thought_id.startswith("name:"),  # Flag for name-only results
+                    })
+            else:
+                # Unknown type - log for debugging
+                # print(f"[DEBUG] Unknown result type: searchType={result_type}, entityType={entity_type}, result={result}", file=sys.stderr)
+                pass
+        
+        # Combine results with clear labeling
+        all_results = thoughts + attachments
+        
+        # Special handling: If searching for exact name and no thoughts found, try graph navigation
+        if len(thoughts) == 0 and only_search_thought_names:
+            # print(f"[INFO] No thoughts found with search, trying graph navigation for: {query_text}", file=sys.stderr)
+            found_thought = await find_thought_by_name(api, brain_id, query_text)
+            if found_thought:
+                # print(f"[INFO] Found thought via graph: {found_thought.get('name')} (ID: {found_thought.get('id')})", file=sys.stderr)
+                # Add both id and thoughtId for compatibility
+                if "id" in found_thought:
+                    found_thought["thoughtId"] = found_thought.get("thoughtId", found_thought["id"])
+                thoughts.append({
+                    **found_thought,
+                    "type": "thought",
+                    "foundViaGraph": True,
+                })
+                all_results = thoughts + attachments
         
         return {
             "success": True,
-            "results": thoughts,
-            "count": len(thoughts),
+            "results": all_results,  # Mixed results
+            "thoughts": thoughts,     # Just thoughts with IDs
+            "attachments": attachments,  # Just attachments
+            "count": len(all_results),
+            "thoughtCount": len(thoughts),
+            "attachmentCount": len(attachments),
             "query": query_text,
+            "note": f"Found {len(thoughts)} thoughts and {len(attachments)} attachments. Use 'thoughts' array for items with thought IDs.",
         }
     except Exception as e:
         return {
@@ -268,15 +399,40 @@ async def get_thought_graph(api, args: Dict[str, Any]) -> Dict[str, Any]:
         
         graph = await api.get_thought_graph(brain_id, thought_id, include_siblings)
         
-        # Process graph data
-        central_thought = graph.get("centralThought", {})
-        connected_thoughts = graph.get("connectedThoughts", {})
+        # Process graph data - API returns activeThought and connections at root level
+        central_thought = graph.get("activeThought", graph.get("centralThought", {}))
         
-        # Organize connections by type
-        parents = connected_thoughts.get("parents", [])
-        children = connected_thoughts.get("children", [])
-        jumps = connected_thoughts.get("jumps", [])
-        siblings = connected_thoughts.get("siblings", []) if include_siblings else []
+        # Ensure the central thought has both id and thoughtId
+        if central_thought:
+            if not central_thought.get("thoughtId"):
+                central_thought["thoughtId"] = central_thought.get("id", thought_id)
+            if not central_thought.get("id"):
+                central_thought["id"] = central_thought.get("thoughtId", thought_id)
+        
+        # Organize connections by type and ensure all have IDs
+        def ensure_ids(thoughts_list):
+            """Ensure all thoughts in the list have both id and thoughtId fields."""
+            if not thoughts_list:
+                return []
+            processed = []
+            for thought in thoughts_list:
+                if thought:
+                    # Ensure both id and thoughtId are present
+                    if "id" in thought:
+                        thought["thoughtId"] = thought.get("thoughtId", thought["id"])
+                    elif "thoughtId" in thought:
+                        thought["id"] = thought["thoughtId"]
+                    processed.append(thought)
+            return processed
+        
+        # Get connections - API returns them at root level, not under connectedThoughts
+        parents = ensure_ids(graph.get("parents", []))
+        children = ensure_ids(graph.get("children", []))
+        jumps = ensure_ids(graph.get("jumps", []))
+        siblings = ensure_ids(graph.get("siblings", [])) if include_siblings else []
+        
+        # Also get tags if available
+        tags = graph.get("tags", [])
         
         return {
             "success": True,
