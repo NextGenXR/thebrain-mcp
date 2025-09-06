@@ -330,6 +330,87 @@ def get_tool_schemas() -> Dict[str, Dict[str, Any]]:
             },
         },
         
+        # Hybrid/Enhanced Operations (Local Database + Cloud)
+        "search_thoughts_hybrid": {
+            "name": "search_thoughts_hybrid",
+            "description": "Enhanced search using local database for complete access (includes tags, types, notes)",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "brainId": {
+                        "type": "string",
+                        "description": "The brain ID",
+                    },
+                    "queryText": {
+                        "type": "string",
+                        "description": "Search query. Supports: 'tag:TagName', 'type:TypeName', 'recent:7' or general text",
+                    },
+                    "maxResults": {
+                        "type": "integer",
+                        "description": "Maximum results to return",
+                        "default": 100,
+                    },
+                    "searchInNotes": {
+                        "type": "boolean",
+                        "description": "Whether to search in note content",
+                        "default": True,
+                    },
+                },
+                "required": ["queryText"],
+            },
+        },
+        "get_tagged_thoughts": {
+            "name": "get_tagged_thoughts",
+            "description": "Get all thoughts with a specific tag (actually works!)",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "brainId": {
+                        "type": "string",
+                        "description": "The brain ID",
+                    },
+                    "tagName": {
+                        "type": "string",
+                        "description": "Name of the tag",
+                    },
+                },
+                "required": ["tagName"],
+            },
+        },
+        "sync_brain_data": {
+            "name": "sync_brain_data",
+            "description": "Sync local database with cloud data",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "brainId": {
+                        "type": "string",
+                        "description": "The brain ID",
+                    },
+                    "forceDownload": {
+                        "type": "boolean",
+                        "description": "Force full re-download instead of incremental sync",
+                        "default": False,
+                    },
+                },
+                "required": [],
+            },
+        },
+        "get_brain_statistics": {
+            "name": "get_brain_statistics",
+            "description": "Get comprehensive statistics about a brain",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "brainId": {
+                        "type": "string",
+                        "description": "The brain ID",
+                    },
+                },
+                "required": [],
+            },
+        },
+        
         # Note Operations with Rich Content Support
         "get_note": {
             "name": "get_note",

@@ -9,6 +9,13 @@ from .attachments import *
 from .notes import *
 from .stats import *
 
+# Import hybrid handlers if available
+try:
+    from .hybrid_search import *
+    HYBRID_AVAILABLE = True
+except ImportError:
+    HYBRID_AVAILABLE = False
+
 __all__ = [
     # Thoughts
     'list_brains',
@@ -42,3 +49,13 @@ __all__ = [
     'get_brain_stats',
     'get_modifications',
 ]
+
+# Add hybrid handlers if available
+if HYBRID_AVAILABLE:
+    __all__.extend([
+        'search_thoughts_hybrid',
+        'get_tagged_thoughts',
+        'sync_brain_data',
+        'get_brain_statistics',
+        'get_thought_graph_hybrid',
+    ])

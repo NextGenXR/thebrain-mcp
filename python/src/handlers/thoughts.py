@@ -271,7 +271,7 @@ async def delete_thought(api, args: Dict[str, Any]) -> Dict[str, Any]:
 
 
 async def search_thoughts(api, args: Dict[str, Any]) -> Dict[str, Any]:
-    """Search for thoughts in a brain."""
+    """Search for thoughts in a brain - improved version."""
     try:
         brain_id = args.get("brainId")
         if not brain_id:
@@ -281,125 +281,145 @@ async def search_thoughts(api, args: Dict[str, Any]) -> Dict[str, Any]:
         max_results = args.get("maxResults", 30)
         only_search_thought_names = args.get("onlySearchThoughtNames", False)
         
+        # Perform the search
         results = await api.search_thoughts(
             brain_id, query_text, max_results, only_search_thought_names
         )
         
-        # Debug logging (can be enabled if needed)
-        # import sys
-        # print(f"[DEBUG] Search query: '{query_text}', onlyNames={only_search_thought_names}, results={len(results) if results else 0}", file=sys.stderr)
-        
-        # Process search results - handle both thoughts and attachments
-        thoughts = []
+        # Process search results - categorize by type and ID availability
+        thoughts_with_ids = []
+        thoughts_without_ids = []
         attachments = []
-        notes = []
         
         for result in results:
-            # Check the search result type and entity type
-            # searchResultType: 1=Thought, 2=Note?, 3=Link?, 4=Attachment
-            # entityType: 1=?, 2=Thought, 3=?, 4=Attachment
             result_type = result.get("searchResultType", 1)
             entity_type = result.get("entityType")
             
+            # Handle attachments
             if result_type == 4 or entity_type == 4:
-                # This is an attachment result
                 attachment_id = result.get("attachmentId")
-                source_id = result.get("sourceId")  # Parent thought ID
+                source_id = result.get("sourceId")
                 
                 attachments.append({
                     "attachmentId": attachment_id,
-                    "thoughtId": source_id,  # Parent thought
+                    "thoughtId": source_id,
                     "name": result.get("name"),
-                    "sourceType": result.get("sourceType"),  # 1=File, 2=URL
+                    "sourceType": result.get("sourceType"),
                     "brainId": result.get("brainId") or brain_id,
                     "brainName": result.get("brainName"),
                     "type": "attachment",
                 })
+            
+            # Handle thoughts
             elif entity_type == 2 or result_type == 1:
-                # This is likely a thought result
-                thought_id = result.get("id") or result.get("thoughtId")
-                thought_name = result.get("name")
+                # Try multiple possible ID fields
+                thought_id = (
+                    result.get("id") or 
+                    result.get("thoughtId") or 
+                    result.get("Id") or 
+                    result.get("ThoughtId") or
+                    result.get("sourceId")
+                )
                 
-                # For entity_type=2 results, generate a placeholder ID if missing
-                if not thought_id and thought_name:
-                    # This is a thought found by name but without ID in search results
-                    # print(f"[INFO] Found thought by name without ID: {thought_name}", file=sys.stderr)
-                    thought_id = f"name:{thought_name}"  # Placeholder to indicate name-based result
+                thought_name = result.get("name") or result.get("Name", "")
                 
-                if thought_id:
-                    thoughts.append({
-                        "id": thought_id,
-                        "thoughtId": thought_id,  # Include both for compatibility
-                        "brainId": result.get("brainId") or brain_id,
-                        "name": thought_name,
-                        "label": result.get("label"),
-                        "kind": result.get("kind"),
-                        "creationDateTime": result.get("creationDateTime"),
-                        "modificationDateTime": result.get("modificationDateTime"),
-                        "matchType": result.get("matchType"),
-                        "score": result.get("score"),
-                        "typeId": result.get("typeId"),
-                        "acType": result.get("acType"),
-                        "entityType": entity_type,
-                        "searchResultType": result_type,
-                        "type": "thought",
-                        "needsIdLookup": thought_id.startswith("name:"),  # Flag for name-only results
-                    })
-            else:
-                # Unknown type - log for debugging
-                # print(f"[DEBUG] Unknown result type: searchType={result_type}, entityType={entity_type}, result={result}", file=sys.stderr)
-                pass
-        
-        # Combine results with clear labeling
-        all_results = thoughts + attachments
-        
-        # Special handling: If searching for exact name and no thoughts found, try graph navigation
-        if len(thoughts) == 0 and only_search_thought_names:
-            # print(f"[INFO] No thoughts found with search, trying graph navigation for: {query_text}", file=sys.stderr)
-            found_thought = await find_thought_by_name(api, brain_id, query_text)
-            if found_thought:
-                # print(f"[INFO] Found thought via graph: {found_thought.get('name')} (ID: {found_thought.get('id')})", file=sys.stderr)
-                # Add both id and thoughtId for compatibility
-                if "id" in found_thought:
-                    found_thought["thoughtId"] = found_thought.get("thoughtId", found_thought["id"])
-                thoughts.append({
-                    **found_thought,
+                # Create thought object
+                thought_obj = {
+                    "name": thought_name,
+                    "label": result.get("label"),
+                    "kind": result.get("kind"),
+                    "creationDateTime": result.get("creationDateTime"),
+                    "modificationDateTime": result.get("modificationDateTime"),
+                    "matchType": result.get("matchType"),
+                    "score": result.get("score"),
+                    "typeId": result.get("typeId"),
+                    "acType": result.get("acType"),
+                    "entityType": entity_type,
+                    "searchResultType": result_type,
+                    "brainId": result.get("brainId") or brain_id,
                     "type": "thought",
-                    "foundViaGraph": True,
-                })
-                all_results = thoughts + attachments
+                }
+                
+                if thought_id and not thought_id.startswith("name:"):
+                    # We have a valid ID
+                    thought_obj["id"] = thought_id
+                    thought_obj["thoughtId"] = thought_id
+                    thoughts_with_ids.append(thought_obj)
+                else:
+                    # No ID available - this is a name-only match
+                    thought_obj["nameOnlyMatch"] = True
+                    thoughts_without_ids.append(thought_obj)
         
-        # Also try to resolve thoughts that need ID lookup
-        for i, thought in enumerate(thoughts):
-            if thought.get("needsIdLookup") and thought.get("name"):
-                # Try to find the real thought ID through graph search
-                found_thought = await find_thought_by_name(api, brain_id, thought.get("name"))
-                if found_thought and found_thought.get("id"):
-                    # Replace the placeholder with the real thought
-                    thoughts[i] = {
-                        **found_thought,
-                        "type": "thought",
-                        "foundViaGraph": True,
-                        "resolvedFromPlaceholder": True,
-                    }
-                    # Ensure both id and thoughtId are present
-                    if "id" in thoughts[i]:
-                        thoughts[i]["thoughtId"] = thoughts[i].get("thoughtId", thoughts[i]["id"])
+        # Try alternative search for a few thoughts without IDs
+        if thoughts_without_ids and len(thoughts_without_ids) <= 5:
+            for thought in thoughts_without_ids[:]:
+                if thought.get("name"):
+                    # Try exact name search with quotes
+                    try:
+                        exact_search = await api.search_thoughts(
+                            brain_id, 
+                            f'"{thought["name"]}"',
+                            max_results=5,
+                            only_search_thought_names=True
+                        )
+                        
+                        for exact_result in exact_search:
+                            exact_id = (
+                                exact_result.get("id") or 
+                                exact_result.get("thoughtId")
+                            )
+                            exact_name = exact_result.get("name", "")
+                            
+                            if exact_id and exact_name == thought["name"]:
+                                # Found it! Move to thoughts with IDs
+                                thought["id"] = exact_id
+                                thought["thoughtId"] = exact_id
+                                thought["resolvedViaExactSearch"] = True
+                                del thought["nameOnlyMatch"]
+                                thoughts_without_ids.remove(thought)
+                                thoughts_with_ids.append(thought)
+                                break
+                    except:
+                        pass  # If exact search fails, keep as name-only
         
-        # Rebuild all_results after potential updates
-        all_results = thoughts + attachments
+        # Combine all results
+        all_thoughts = thoughts_with_ids + thoughts_without_ids
+        all_results = all_thoughts + attachments
         
-        return {
+        # Build response with clear categorization
+        response = {
             "success": True,
-            "results": all_results,  # Mixed results
-            "thoughts": thoughts,     # Just thoughts with IDs
-            "attachments": attachments,  # Just attachments
+            "results": all_results,
+            "thoughts": thoughts_with_ids,  # Only thoughts with valid IDs
+            "thoughtsWithoutIds": thoughts_without_ids,  # Name matches without IDs
+            "attachments": attachments,
             "count": len(all_results),
-            "thoughtCount": len(thoughts),
+            "thoughtCount": len(thoughts_with_ids),
+            "thoughtWithoutIdCount": len(thoughts_without_ids),
             "attachmentCount": len(attachments),
             "query": query_text,
-            "note": f"Found {len(thoughts)} thoughts and {len(attachments)} attachments. Use 'thoughts' array for items with thought IDs.",
         }
+        
+        # Add helpful notes
+        if thoughts_without_ids:
+            names = [t.get("name", "Unknown") for t in thoughts_without_ids[:3]]
+            names_str = ", ".join(f'"{n}"' for n in names)
+            if len(thoughts_without_ids) > 3:
+                names_str += f" and {len(thoughts_without_ids) - 3} more"
+            
+            response["note"] = (
+                f"Found {len(thoughts_with_ids)} thoughts with IDs and "
+                f"{len(thoughts_without_ids)} name matches without IDs ({names_str}). "
+                "Name-only matches indicate thoughts that exist but can't be directly accessed via API."
+            )
+        else:
+            response["note"] = (
+                f"Found {len(thoughts_with_ids)} thoughts and "
+                f"{len(attachments)} attachments."
+            )
+        
+        return response
+        
     except Exception as e:
         return {
             "success": False,

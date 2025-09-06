@@ -3,6 +3,7 @@ Note operation handlers for TheBrain MCP server.
 """
 
 from typing import Dict, Any
+from ..markdown_formatter import format_markdown_for_thebrain
 
 
 async def get_note(api, args: Dict[str, Any]) -> Dict[str, Any]:
@@ -58,7 +59,10 @@ async def create_or_update_note(api, args: Dict[str, Any]) -> Dict[str, Any]:
         thought_id = args["thoughtId"]
         markdown = args["markdown"]
         
-        await api.create_or_update_note(brain_id, thought_id, markdown)
+        # Format markdown for proper rendering in TheBrain
+        formatted_markdown = format_markdown_for_thebrain(markdown)
+        
+        await api.create_or_update_note(brain_id, thought_id, formatted_markdown)
         
         return {
             "success": True,
@@ -82,7 +86,10 @@ async def append_to_note(api, args: Dict[str, Any]) -> Dict[str, Any]:
         thought_id = args["thoughtId"]
         markdown = args["markdown"]
         
-        await api.append_to_note(brain_id, thought_id, markdown)
+        # Format markdown for proper rendering in TheBrain
+        formatted_markdown = format_markdown_for_thebrain(markdown)
+        
+        await api.append_to_note(brain_id, thought_id, formatted_markdown)
         
         return {
             "success": True,

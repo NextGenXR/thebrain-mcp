@@ -5,6 +5,47 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.1] - 2025-01-20
+
+### Fixed
+- **Markdown Formatting**: Fixed issue where bullet points were rendering as checkboxes in TheBrain
+  - Regular bullet points (`*`, `-`, `+`) now render correctly as bullets using `•` character
+  - Actual checkboxes (`- [ ]`, `- [x]`) are preserved when intentional
+  - Unicode checkmarks (✅, ✓) are converted to safe format `[✓]`
+  - Nested lists maintain proper indentation
+  - All other markdown formatting (headers, bold, italic, etc.) is preserved
+
+- **Search Results**: Fixed issue where search results showed "placeholder thoughts that need ID lookup"
+  - Improved ID extraction from search results (checks multiple possible ID fields)
+  - Better categorization of thoughts with IDs vs name-only matches
+  - Added automatic retry with exact name search for better ID resolution
+  - Clear response format distinguishing accessible thoughts from name-only matches
+  - More informative error messages explaining why some thoughts can't be accessed
+
+### Added
+- **Markdown Formatter Module**: New `src/markdown_formatter.py` module
+  - `TheBrainMarkdownFormatter` class for handling markdown conversions
+  - Automatic formatting applied to `create_or_update_note` and `append_to_note` operations
+  - Transparent to API users - no code changes required
+
+- **Hybrid Local/Cloud Architecture**: Revolutionary improvement using local database for reads, API for writes
+  - `HybridBrainManager` class for managing local SQLite database and cloud sync
+  - Automatic discovery of existing Brain databases in `~/Brains/` directory
+  - Smart multi-brain support - checks all U00, U01, etc. subdirectories
+  - Only downloads from cloud if brain not found locally (bandwidth efficient)
+  - Complete access to all thought IDs (no more placeholders!)
+  - Tag-based search that actually works (`tag:TagName` syntax)
+  - Type-based filtering (`type:TypeName` syntax)
+  - Recent modifications tracking (`recent:7` for last 7 days)
+  - Full-text search in notes with `searchInNotes` option
+
+- **New Enhanced Tools**:
+  - `search_thoughts_hybrid` - Comprehensive search with tags, types, and notes
+  - `get_tagged_thoughts` - Returns all thoughts with a specific tag (finally works!)
+  - `sync_brain_data` - Manual sync between local and cloud
+  - `get_brain_statistics` - Complete brain analytics from local database
+  - `get_thought_graph_hybrid` - Full relationship data with all IDs
+
 ## [1.1.0] - 2025-06-18
 
 ### 🎉 Major Fixes - JSON Patch Format Resolution

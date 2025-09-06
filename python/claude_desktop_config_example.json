@@ -1,7 +1,7 @@
 {
   "mcpServers": {
     "thebrain": {
-      "command": "C:\\Users\\joconnor\\.local\\bin\\uv.exe",
+      "command": "C:\\Users\\YOUR_USER_NAME_HERE\\.local\\bin\\uv.exe",
       "args": ["run", "python", "C:\\Git\\thebrain-mcp\\python\\main.py"],
       "cwd": "C:\\Git\\thebrain-mcp\\python",
       "env": {
