@@ -1,4 +1,5 @@
 {
+  "_comment": "TheBrain MCP uses UV as the primary dependency manager",
   "mcpServers": {
     "thebrain": {
       "command": "C:\\Users\\YOUR_USER_NAME_HERE\\.local\\bin\\uv.exe",
@@ -6,7 +7,8 @@
       "cwd": "C:\\Git\\thebrain-mcp\\python",
       "env": {
         "THEBRAIN_API_KEY": "YOUR_API_KEY_HERE",
-        "THEBRAIN_DEFAULT_BRAIN_ID": ""
+        "THEBRAIN_DEFAULT_BRAIN_ID": "",
+        "UV_PROJECT_ROOT": "C:\\Git\\thebrain-mcp\\python"
       }
     }
   }

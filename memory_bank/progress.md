@@ -2,7 +2,21 @@
 
 ## Latest Updates
 
-### September 6, 2025 - Graph Analysis Implementation
+### September 6, 2025 - UV as Primary Dependency Manager
+- **Established**: UV as the primary dependency management tool
+- **Benefits**: 
+  - 10-100x faster than pip
+  - Reliable dependency resolution
+  - Consistent across all environments
+- **Documentation**: Created comprehensive UV_SETUP_GUIDE.md
+- **Configuration**: 
+  - Updated pyproject.toml with all dependencies
+  - Added optional visualization extras
+  - Deprecated requirements.txt (kept for compatibility)
+- **Testing**: Created test-uv scripts for validation
+- **Status**: ✅ UV fully operational and tested
+
+### September 6, 2025 - Graph Analysis Implementation & MCP Integration
 - **Added**: NetworkX-based graph analyzer for TheBrain databases
 - **Features**: 
   - Centrality analysis to find important thoughts
@@ -11,11 +25,19 @@
   - Duplicate name detection
   - Structural analysis (orphans, cycles, hubs)
   - Export to GraphML for visualization
+- **MCP Integration**: Added 5 new tools to the MCP server
+  - `analyze_brain_graph` - Statistics, centrality, communities, duplicates
+  - `find_knowledge_paths` - Find shortest paths between thoughts
+  - `get_thought_neighborhood` - Explore connected thoughts
+  - `find_knowledge_gaps` - Identify isolated areas needing connections
+  - `export_graph_visualization` - Export for Gephi and other tools
 - **Benefits**: Enables AI-powered organization, pattern detection, and knowledge gap analysis
 - **Files**: 
   - `python/src/graph_analyzer.py` - Core analyzer implementation
+  - `python/src/handlers/graph.py` - MCP handler integration
   - `python/docs/graph-analysis-guide.md` - Comprehensive guide
   - `python/test_graph_analysis.py` - Test suite
+  - Updated `tool_schemas.py`, `handlers/__init__.py`, `main.py`
 
 ### September 6, 2025 - Memory Bank Documentation Created
 - **Created**: All recommended memory bank documents per guidelines

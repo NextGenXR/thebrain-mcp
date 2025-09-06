@@ -140,12 +140,14 @@
 ## Development Environment
 
 ### Current Setup
-- **Python**: 3.11.5
+- **Python**: 3.10-3.12 (managed by UV)
+- **Dependency Manager**: **UV** (primary) - 10-100x faster than pip
 - **Key Dependencies**:
-  - mcp: 1.1.0
-  - aiohttp: 3.8.5
-  - sqlite3: Built-in
-  - tomli-w: 1.0.0
+  - mcp: >=1.0.0
+  - httpx: >=0.25.0
+  - networkx: >=3.0
+  - pandas: >=2.0.0
+  - matplotlib: >=3.5.0
 
 ### Testing
 - **Unit Tests**: pytest
@@ -205,17 +207,20 @@
 
 ### Development
 ```bash
-# Setup environment
+# Setup environment with UV (primary tool)
 cd python
 uv venv
 uv pip install -e .
+uv pip install -e ".[visualization]"  # Optional extras
 
-# Run tests
-python test_hybrid_fix.py
-python test_api.py
+# Run tests with UV
+uv run python test_hybrid_fix.py
+uv run python test_graph_analysis.py
+uv run python test-uv.bat  # Windows
+uv run ./test-uv.sh        # Unix
 
-# Start server
-python main.py
+# Start server with UV
+uv run python main.py
 ```
 
 ### Debugging
