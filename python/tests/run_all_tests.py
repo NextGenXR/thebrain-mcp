@@ -11,8 +11,8 @@ from pathlib import Path
 import time
 from typing import Dict, Tuple
 
-# Add current directory to path
-sys.path.insert(0, str(Path(__file__).parent))
+# Add parent directory to path for src imports
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 
 async def run_test(test_name: str, test_func) -> Tuple[bool, float, str]:
@@ -65,6 +65,8 @@ async def main():
     print("TEST 1/4: Installation Verification")
     print("-"*70)
     try:
+        # Import test modules
+        sys.path.insert(0, str(Path(__file__).parent))
         from test_installation import test_imports, test_environment
         success = test_imports() and test_environment()
         results["Installation"] = (success, 0, "All components installed" if success else "Missing components")
