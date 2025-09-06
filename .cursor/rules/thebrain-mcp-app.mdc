@@ -6,3 +6,5 @@ alwaysApply: true
 
 # General Rules for The Brain MCP Server
 
+For the Python version of the MCP server, keep all relevant files in the 'python/' folder and sub-folders. This includes the doc/ and /memory_bank folders.
+
