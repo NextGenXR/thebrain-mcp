@@ -77,13 +77,13 @@ If you prefer to set up manually:
 cd python
 
 # Create virtual environment
-python -m venv venv
+python -m venv .venv
 
 # Activate virtual environment
 # On Windows:
-venv\Scripts\activate
+.venv\Scripts\activate
 # On Linux/macOS:
-source venv/bin/activate
+source .venv/bin/activate
 
 # Install dependencies
 pip install -r requirements.txt
@@ -148,10 +148,10 @@ cd python
 First activate the virtual environment:
 ```bash
 # Windows
-venv\Scripts\activate
+.venv\Scripts\activate
 
 # Linux/macOS
-source venv/bin/activate
+source .venv/bin/activate
 ```
 
 Then run the server:

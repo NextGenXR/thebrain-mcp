@@ -40,7 +40,7 @@ The system uses a smart discovery process:
 ## Directory Structure Explained
 
 ```
-C:\Users\joconnor\Brains\
+%USERPROFILE%\Brains\
 ├── U00\                    # First brain slot
 │   ├── User.db            # SQLite database with all brain data
 │   ├── Notes\             # Note content files

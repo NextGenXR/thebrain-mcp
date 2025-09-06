@@ -78,7 +78,7 @@ mods = await api.get_brain_modifications(brain_id, max_logs=100)
 
 ### For Claude/AI Assistants
 
-1. **Start with partial searches**: "Beau" instead of "Beau Perschall"
+1. **Start with partial searches**: "Project" instead of "Project Lead"
 2. **Use recent context**: "Find the thought I just created"
 3. **Navigate from known points**: "Find thoughts connected to Home"
 4. **Leverage modifications**: "Show recently modified thoughts"
@@ -196,11 +196,11 @@ C:\Users\{username}\Brains\U{XX}\B{XX}\
 from src.local_brain_cache import LocalBrainCache
 
 # Connect to local brain
-cache = LocalBrainCache(r"C:\Users\joconnor\Brains\U01\B02")
+cache = LocalBrainCache(os.path.expanduser("~/Brains/U01/B02"))
 cache.build_index()  # Loads all 1548 thoughts instantly!
 
 # INSTANT search - no API needed!
-results = cache.search_thoughts("Beau Perschall")  # Found immediately!
+results = cache.search_thoughts("Project Lead")  # Found immediately!
 
 # Get note content directly from disk
 note = cache.get_thought_note(thought_id)

@@ -111,7 +111,7 @@ Thoughts can have **types** that are other thoughts:
 
 ```
 TypeId → Points to another thought that acts as a type
-Example: "Beau Perschall" has TypeId → "Dev Team" thought
+Example: "John Smith" has TypeId → "Dev Team" thought
 ```
 
 Your brain has custom types like:
@@ -167,7 +167,7 @@ class BrainDateTimeHandler:
 Names can contain:
 - Ampersands: `Media & Entertainment`
 - Parentheses: `DGPT Data Governance & Privacy Team (Formerly DPT)`
-- Apostrophes: `NVIDIA's Cloud Function`
+- Apostrophes: `Company's Cloud Function`
 - Unicode characters
 
 **No HTML encoding needed** - stored as plain text.

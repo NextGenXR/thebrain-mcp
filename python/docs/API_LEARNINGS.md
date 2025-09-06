@@ -162,7 +162,7 @@ print(graph.keys())  # ['activeThought', 'parents', 'children', ...]
 1. **Added `find_thought_by_name()`**: Graph traversal fallback with breadth-first search
    - Searches up to 3 levels deep from home thought
    - Handles thoughts not in immediate connections
-   - Example: Found "Beau Perschall" at depth 3 when API returned nothing
+   - Example: Found "Project Lead" at depth 3 when API returned nothing
 2. **Fixed graph parsing**: Use `activeThought` not `centralThought`
 3. **Enhanced search**: Separate thoughts/attachments, handle missing IDs
 4. **ID compatibility**: Always provide both `id` and `thoughtId`

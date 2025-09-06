@@ -88,7 +88,7 @@ for comm_id, thought_ids in communities.items():
 
 ```python
 # Find shortest path between two thoughts
-path = analyzer.find_shortest_path("Machine Learning", "NVIDIA")
+path = analyzer.find_shortest_path("Machine Learning", "Main Project")
 if path:
     print(" → ".join(path))
 
@@ -133,31 +133,31 @@ def analyze_knowledge_gaps(analyzer):
     return low_degree, components
 ```
 
-### 2. Mega Project Analysis
+### 2. Project Structure Analysis
 
 ```python
-def analyze_mega_project(analyzer):
-    """Analyze the Mega project structure in your NVIDIA brain."""
+def analyze_project_structure(analyzer):
+    """Analyze the project structure in your main brain."""
     
-    # Get neighborhood around Mega-tagged thoughts
-    mega_neighborhood = analyzer.get_thought_neighborhood("Mega", depth=2)
+    # Get neighborhood around project-tagged thoughts
+    project_neighborhood = analyzer.get_thought_neighborhood("Project", depth=2)
     
-    # Find all paths from Mega to SimReady
+    # Find all paths from Main Project to Sub Project
     paths = nx.all_simple_paths(
         analyzer.graph, 
-        source="mega_thought_id",
-        target="simready_thought_id",
+        source="main_project_id",
+        target="sub_project_id",
         cutoff=5  # Max path length
     )
     
-    # Analyze link types in Mega area
-    mega_links = []
-    for edge in mega_neighborhood.edges(data=True):
+    # Analyze link types in project area
+    project_links = []
+    for edge in project_neighborhood.edges(data=True):
         meaning = edge[2].get('meaning', 0)
-        mega_links.append(meaning)
+        project_links.append(meaning)
     
-    link_distribution = Counter(mega_links)
-    print("Link types in Mega area:", link_distribution)
+    link_distribution = Counter(project_links)
+    print("Link types in project area:", link_distribution)
 ```
 
 ### 3. Temporal Analysis
@@ -207,7 +207,7 @@ import matplotlib.pyplot as plt
 import networkx as nx
 
 # Get a subgraph for visualization (full graph might be too large)
-subgraph = analyzer.get_thought_neighborhood("NVIDIA", depth=2)
+subgraph = analyzer.get_thought_neighborhood("Main Project", depth=2)
 
 # Create layout
 pos = nx.spring_layout(subgraph, k=2, iterations=50)
@@ -220,7 +220,7 @@ nx.draw(subgraph, pos,
         node_color='lightblue',
         font_size=8,
         arrows=True)
-plt.title("NVIDIA Thought Neighborhood")
+plt.title("Main Project Thought Neighborhood")
 plt.show()
 ```
 
@@ -330,13 +330,13 @@ approx_between = nx.betweenness_centrality(
 
 ## Benefits for Your Workflow
 
-### For the Mega Project
-- Map all Mega-related thoughts and their connections
-- Find which concepts bridge Mega and SimReady
-- Identify knowledge gaps in the Mega documentation
+### For Main Projects
+- Map all project-related thoughts and their connections
+- Find which concepts bridge Main Project and Sub Projects
+- Identify knowledge gaps in the project documentation
 - Track project growth over time
 
-### For NVIDIA Brain Organization
+### For Knowledge Base Organization
 - Identify the most important/central concepts
 - Find and merge duplicate entries
 - Discover hidden connections between projects
@@ -359,7 +359,7 @@ pip install python-louvain pyvis plotly
 
 2. **Run Analysis**:
 ```bash
-python src/graph_analyzer.py "C:/Users/joconnor/Brains/U01/B02/Brain.db"
+python src/graph_analyzer.py "%USERPROFILE%/Brains/U01/B02/Brain.db"
 ```
 
 3. **Integrate with MCP**:
