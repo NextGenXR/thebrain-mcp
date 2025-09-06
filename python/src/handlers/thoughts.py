@@ -271,7 +271,28 @@ async def delete_thought(api, args: Dict[str, Any]) -> Dict[str, Any]:
 
 
 async def search_thoughts(api, args: Dict[str, Any]) -> Dict[str, Any]:
-    """Search for thoughts in a brain - improved version."""
+    """Search for thoughts in a brain - automatically uses local DB when available."""
+    # Try to use hybrid search first (local database) with timeout
+    try:
+        import asyncio
+        from .hybrid_search import search_thoughts_hybrid
+        
+        # Add timeout to prevent hanging
+        result = await asyncio.wait_for(
+            search_thoughts_hybrid(api, args),
+            timeout=5.0  # 5 second timeout
+        )
+        return result
+    except asyncio.TimeoutError:
+        # Hybrid search timed out, fall back to API
+        import sys
+        print(f"[WARNING] Local database search timed out, using API", file=sys.stderr)
+    except (ImportError, Exception) as e:
+        # Fall back to API-only search if hybrid not available
+        import sys
+        print(f"[WARNING] Hybrid search failed: {e}, using API", file=sys.stderr)
+    
+    # Original API-based implementation as fallback
     try:
         brain_id = args.get("brainId")
         if not brain_id:
@@ -428,7 +449,16 @@ async def search_thoughts(api, args: Dict[str, Any]) -> Dict[str, Any]:
 
 
 async def get_thought_graph(api, args: Dict[str, Any]) -> Dict[str, Any]:
-    """Get a thought with all its connections and attachments."""
+    """Get a thought with all its connections and attachments - uses local DB when available."""
+    # Try to use hybrid graph first (local database)
+    try:
+        from .hybrid_search import get_thought_graph_hybrid
+        return await get_thought_graph_hybrid(api, args)
+    except (ImportError, Exception):
+        # Fall back to API-only if hybrid not available
+        pass
+    
+    # Original API-based implementation as fallback
     try:
         brain_id = args.get("brainId")
         if not brain_id:

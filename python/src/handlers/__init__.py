@@ -50,12 +50,9 @@ __all__ = [
     'get_modifications',
 ]
 
-# Add hybrid handlers if available
+# Add specific hybrid handlers that remain as separate tools
 if HYBRID_AVAILABLE:
     __all__.extend([
-        'search_thoughts_hybrid',
         'get_tagged_thoughts',
         'sync_brain_data',
-        'get_brain_statistics',
-        'get_thought_graph_hybrid',
     ])

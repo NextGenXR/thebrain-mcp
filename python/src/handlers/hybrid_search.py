@@ -18,12 +18,22 @@ _manager_cache: Dict[str, HybridBrainManager] = {}
 
 async def get_or_create_manager(api, brain_id: str) -> HybridBrainManager:
     """Get or create a hybrid manager for a brain."""
+    import os
+    
+    # Allow disabling hybrid mode via environment variable
+    if os.getenv("THEBRAIN_DISABLE_HYBRID") == "true":
+        raise ImportError("Hybrid mode disabled by environment variable")
+    
     if brain_id not in _manager_cache:
         manager = HybridBrainManager(api)
-        if await manager.initialize(brain_id):
-            _manager_cache[brain_id] = manager
-        else:
-            raise ValueError(f"Failed to initialize hybrid manager for brain {brain_id}")
+        try:
+            if await manager.initialize(brain_id):
+                _manager_cache[brain_id] = manager
+            else:
+                raise ValueError(f"Failed to initialize hybrid manager for brain {brain_id}")
+        except Exception as e:
+            logger.error(f"Failed to create hybrid manager: {e}")
+            raise
     
     return _manager_cache[brain_id]
 

@@ -19,7 +19,16 @@ def format_bytes(size_bytes: Optional[int]) -> str:
 
 
 async def get_brain_stats(api, args: Dict[str, Any]) -> Dict[str, Any]:
-    """Get statistics about a brain."""
+    """Get statistics about a brain - uses local DB when available for comprehensive stats."""
+    # Try to use hybrid statistics first (local database)
+    try:
+        from .hybrid_search import get_brain_statistics
+        return await get_brain_statistics(api, args)
+    except (ImportError, Exception):
+        # Fall back to API-only if hybrid not available
+        pass
+    
+    # Original API-based implementation as fallback
     try:
         brain_id = args.get("brainId")
         if not brain_id:

@@ -28,23 +28,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Automatic formatting applied to `create_or_update_note` and `append_to_note` operations
   - Transparent to API users - no code changes required
 
-- **Hybrid Local/Cloud Architecture**: Revolutionary improvement using local database for reads, API for writes
-  - `HybridBrainManager` class for managing local SQLite database and cloud sync
-  - Automatic discovery of existing Brain databases in `~/Brains/` directory
-  - Smart multi-brain support - checks all U00, U01, etc. subdirectories
-  - Only downloads from cloud if brain not found locally (bandwidth efficient)
-  - Complete access to all thought IDs (no more placeholders!)
-  - Tag-based search that actually works (`tag:TagName` syntax)
-  - Type-based filtering (`type:TypeName` syntax)
-  - Recent modifications tracking (`recent:7` for last 7 days)
-  - Full-text search in notes with `searchInNotes` option
-
-- **New Enhanced Tools**:
-  - `search_thoughts_hybrid` - Comprehensive search with tags, types, and notes
-  - `get_tagged_thoughts` - Returns all thoughts with a specific tag (finally works!)
-  - `sync_brain_data` - Manual sync between local and cloud
-  - `get_brain_statistics` - Complete brain analytics from local database
-  - `get_thought_graph_hybrid` - Full relationship data with all IDs
+- **Automatic Hybrid Local/Cloud Architecture**: Intelligent zero-configuration system
+  - **Automatic Detection**: Standard functions now automatically use local DB when available
+  - **Zero Configuration**: No need to call special "_hybrid" functions
+  - **Smart Discovery**: Automatically finds Brain databases in `~/Brains/` directory
+  - **Multi-Brain Support**: Checks all U00, U01, etc. subdirectories automatically
+  - **Bandwidth Efficient**: Only downloads from cloud if brain not found locally
+  - **Complete Results**: All thought IDs work (no more placeholders!)
+  - **Enhanced Search Syntax**:
+    - `tag:TagName` - Tag search that actually works!
+    - `type:TypeName` - Filter by thought type
+    - `recent:7` - Get modifications from last 7 days
+    - Full-text search in notes with `searchInNotes` option
+  
+- **Automatic Function Upgrades** (no code changes needed!):
+  - `search_thoughts` - Now automatically uses local DB for complete results
+  - `get_thought_graph` - Automatically returns full relationships with tags
+  - `get_brain_stats` - Automatically provides comprehensive statistics
+  
+- **New Specialized Tools**:
+  - `get_tagged_thoughts` - Direct tag search (returns all thoughts with a tag)
+  - `sync_brain_data` - Manual sync control between local and cloud
 
 ## [1.1.0] - 2025-06-18
 

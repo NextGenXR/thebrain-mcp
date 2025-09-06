@@ -162,18 +162,10 @@ async def handle_call_tool(name: str, arguments: Dict[str, Any]) -> list:
             result = await handlers.get_brain_stats(api, arguments)
         elif name == "get_modifications":
             result = await handlers.get_modifications(api, arguments)
-        
-        # Hybrid Operations (Local Database + Cloud)
-        elif name == "search_thoughts_hybrid":
-            result = await handlers.search_thoughts_hybrid(api, arguments)
         elif name == "get_tagged_thoughts":
             result = await handlers.get_tagged_thoughts(api, arguments)
         elif name == "sync_brain_data":
             result = await handlers.sync_brain_data(api, arguments)
-        elif name == "get_brain_statistics":
-            result = await handlers.get_brain_statistics(api, arguments)
-        elif name == "get_thought_graph_hybrid":
-            result = await handlers.get_thought_graph_hybrid(api, arguments)
         else:
             raise ValueError(f"Unknown tool: {name}")
         

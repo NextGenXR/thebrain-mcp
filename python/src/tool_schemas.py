@@ -330,35 +330,7 @@ def get_tool_schemas() -> Dict[str, Dict[str, Any]]:
             },
         },
         
-        # Hybrid/Enhanced Operations (Local Database + Cloud)
-        "search_thoughts_hybrid": {
-            "name": "search_thoughts_hybrid",
-            "description": "Enhanced search using local database for complete access (includes tags, types, notes)",
-            "inputSchema": {
-                "type": "object",
-                "properties": {
-                    "brainId": {
-                        "type": "string",
-                        "description": "The brain ID",
-                    },
-                    "queryText": {
-                        "type": "string",
-                        "description": "Search query. Supports: 'tag:TagName', 'type:TypeName', 'recent:7' or general text",
-                    },
-                    "maxResults": {
-                        "type": "integer",
-                        "description": "Maximum results to return",
-                        "default": 100,
-                    },
-                    "searchInNotes": {
-                        "type": "boolean",
-                        "description": "Whether to search in note content",
-                        "default": True,
-                    },
-                },
-                "required": ["queryText"],
-            },
-        },
+        # Enhanced Operations (automatically use local DB when available)
         "get_tagged_thoughts": {
             "name": "get_tagged_thoughts",
             "description": "Get all thoughts with a specific tag (actually works!)",
@@ -396,21 +368,6 @@ def get_tool_schemas() -> Dict[str, Dict[str, Any]]:
                 "required": [],
             },
         },
-        "get_brain_statistics": {
-            "name": "get_brain_statistics",
-            "description": "Get comprehensive statistics about a brain",
-            "inputSchema": {
-                "type": "object",
-                "properties": {
-                    "brainId": {
-                        "type": "string",
-                        "description": "The brain ID",
-                    },
-                },
-                "required": [],
-            },
-        },
-        
         # Note Operations with Rich Content Support
         "get_note": {
             "name": "get_note",
@@ -486,7 +443,7 @@ def get_tool_schemas() -> Dict[str, Dict[str, Any]]:
         # Search Operations
         "search_thoughts": {
             "name": "search_thoughts",
-            "description": "Search for thoughts in a brain",
+            "description": "Search for thoughts (automatically uses local DB when available). Supports: 'tag:TagName', 'type:TypeName', 'recent:7'",
             "inputSchema": {
                 "type": "object",
                 "properties": {
@@ -496,7 +453,7 @@ def get_tool_schemas() -> Dict[str, Dict[str, Any]]:
                     },
                     "queryText": {
                         "type": "string",
-                        "description": "Search query text",
+                        "description": "Search query. Supports special syntax: tag:Name, type:Name, recent:days",
                     },
                     "maxResults": {
                         "type": "number",
@@ -507,6 +464,11 @@ def get_tool_schemas() -> Dict[str, Dict[str, Any]]:
                         "type": "boolean",
                         "description": "Only search in thought names (not content)",
                         "default": False,
+                    },
+                    "searchInNotes": {
+                        "type": "boolean",
+                        "description": "Also search in note content (when using local DB)",
+                        "default": True,
                     },
                 },
                 "required": ["queryText"],

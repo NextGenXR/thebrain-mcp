@@ -133,29 +133,37 @@ class HybridBrainManager:
                 if brain_subdir.is_dir():
                     user_db = brain_subdir / "User.db"
                     if user_db.exists():
-                        # Try this database
+                        # Try this database with timeout
                         try:
-                            self.db_conn = sqlite3.connect(str(user_db))
+                            # Use timeout for database connection
+                            self.db_conn = sqlite3.connect(str(user_db), timeout=2.0)
                             self.db_conn.row_factory = sqlite3.Row
                             
                             if await self._verify_brain_id(brain_id):
                                 logger.info(f"Found brain {brain_id} in {user_db}")
                                 self.local_db_path = str(user_db)
-                                await self._index_database()
+                                # Skip indexing for now - it might be slow
+                                # await self._index_database()
+                                self.is_indexed = False  # Mark as not indexed
                                 return True
                             else:
                                 # Not the right brain, close and continue
                                 self.db_conn.close()
                                 self.db_conn = None
-                        except sqlite3.Error as e:
+                        except (sqlite3.Error, sqlite3.OperationalError) as e:
                             logger.warning(f"Error checking {user_db}: {e}")
                             if self.db_conn:
                                 self.db_conn.close()
                                 self.db_conn = None
         
-        # No local database contains the requested brain - offer to download
-        logger.info(f"Brain {brain_id} not found locally. Downloading from cloud...")
-        return await self.download_and_index_brain(brain_id)
+        # No local database contains the requested brain
+        # Don't automatically download - that could take too long
+        logger.warning(f"Brain {brain_id} not found locally. Skipping download.")
+        return False
+        
+        # To enable download, uncomment this:
+        # logger.info(f"Brain {brain_id} not found locally. Downloading from cloud...")
+        # return await self.download_and_index_brain(brain_id)
     
     async def _verify_brain_id(self, brain_id: str) -> bool:
         """Verify the local database contains the specified brain."""
