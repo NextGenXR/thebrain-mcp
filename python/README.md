@@ -232,7 +232,8 @@ thebrain-mcp
 ### Documentation
 
 - [API Integration Guide](THEBRAIN_API_GUIDE.md) - Detailed guide on TheBrain API quirks and patterns
-- [Performance Optimization](PERFORMANCE_OPTIMIZATION.md) - Strategies for handling large brains with thousands of thoughts
+- [Brain Database Structure](BRAIN_DATABASE_STRUCTURE.md) - Complete analysis of local SQLite database
+- [Performance Optimization](PERFORMANCE_OPTIMIZATION.md) - Strategies for handling large brains with thousands of thoughts  
 - [Troubleshooting Guide](TROUBLESHOOTING.md) - Common issues and solutions
 - [Client Setup Guide](SETUP_CLIENT.md) - How to connect to Claude Desktop and other clients
 - [API Learnings](API_LEARNINGS.md) - Key discoveries about API behavior vs documentation

@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "thebrain": {
+      "command": "C:\\Users\\joconnor\\.local\\bin\\uv.exe",
+      "args": ["run", "python", "C:\\Git\\thebrain-mcp\\python\\main.py"],
+      "cwd": "C:\\Git\\thebrain-mcp\\python",
+      "env": {
+        "THEBRAIN_API_KEY": "YOUR_API_KEY_HERE",
+        "THEBRAIN_DEFAULT_BRAIN_ID": ""
+      }
+    }
+  }
+}
