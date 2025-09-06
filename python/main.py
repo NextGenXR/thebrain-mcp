@@ -166,6 +166,18 @@ async def handle_call_tool(name: str, arguments: Dict[str, Any]) -> list:
             result = await handlers.get_tagged_thoughts(api, arguments)
         elif name == "sync_brain_data":
             result = await handlers.sync_brain_data(api, arguments)
+        
+        # Graph Analysis Operations
+        elif name == "analyze_brain_graph":
+            result = await handlers.analyze_brain_graph(api, arguments)
+        elif name == "find_knowledge_paths":
+            result = await handlers.find_knowledge_paths(api, arguments)
+        elif name == "get_thought_neighborhood":
+            result = await handlers.get_thought_neighborhood(api, arguments)
+        elif name == "find_knowledge_gaps":
+            result = await handlers.find_knowledge_gaps(api, arguments)
+        elif name == "export_graph_visualization":
+            result = await handlers.export_graph_visualization(api, arguments)
         else:
             raise ValueError(f"Unknown tool: {name}")
         

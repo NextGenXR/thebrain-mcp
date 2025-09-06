@@ -705,4 +705,126 @@ def get_tool_schemas() -> Dict[str, Dict[str, Any]]:
                 "required": [],
             },
         },
+        
+        # Graph Analysis Tools
+        "analyze_brain_graph": {
+            "name": "analyze_brain_graph",
+            "description": "Analyze the knowledge graph structure of a brain (statistics, central thoughts, communities, duplicates, orphans, hubs)",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "brainId": {
+                        "type": "string",
+                        "description": "The ID of the brain",
+                    },
+                    "analysisType": {
+                        "type": "string",
+                        "enum": ["statistics", "central", "communities", "duplicates", "orphans", "hubs"],
+                        "description": "Type of analysis to perform",
+                        "default": "statistics",
+                    },
+                },
+                "required": ["brainId"],
+            },
+        },
+        
+        "find_knowledge_paths": {
+            "name": "find_knowledge_paths",
+            "description": "Find shortest path between two thoughts in the knowledge graph",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "brainId": {
+                        "type": "string",
+                        "description": "The ID of the brain",
+                    },
+                    "sourceThought": {
+                        "type": "string",
+                        "description": "Name of the source thought",
+                    },
+                    "targetThought": {
+                        "type": "string",
+                        "description": "Name of the target thought",
+                    },
+                    "maxLength": {
+                        "type": "integer",
+                        "description": "Maximum path length to search",
+                        "default": 5,
+                    },
+                },
+                "required": ["brainId", "sourceThought", "targetThought"],
+            },
+        },
+        
+        "get_thought_neighborhood": {
+            "name": "get_thought_neighborhood",
+            "description": "Get all thoughts connected to a specific thought within a certain depth",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "brainId": {
+                        "type": "string",
+                        "description": "The ID of the brain",
+                    },
+                    "thoughtName": {
+                        "type": "string",
+                        "description": "Name of the central thought",
+                    },
+                    "depth": {
+                        "type": "integer",
+                        "description": "How many links away to explore",
+                        "default": 2,
+                        "minimum": 1,
+                        "maximum": 5,
+                    },
+                },
+                "required": ["brainId", "thoughtName"],
+            },
+        },
+        
+        "find_knowledge_gaps": {
+            "name": "find_knowledge_gaps",
+            "description": "Find areas in the knowledge graph that need more connections (isolated thoughts, disconnected clusters, potential missing links)",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "brainId": {
+                        "type": "string",
+                        "description": "The ID of the brain",
+                    },
+                    "minConnections": {
+                        "type": "integer",
+                        "description": "Minimum number of connections a thought should have",
+                        "default": 2,
+                        "minimum": 1,
+                    },
+                },
+                "required": ["brainId"],
+            },
+        },
+        
+        "export_graph_visualization": {
+            "name": "export_graph_visualization",
+            "description": "Export the brain graph for visualization in external tools like Gephi",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "brainId": {
+                        "type": "string",
+                        "description": "The ID of the brain",
+                    },
+                    "format": {
+                        "type": "string",
+                        "enum": ["graphml"],
+                        "description": "Export format (currently only GraphML supported)",
+                        "default": "graphml",
+                    },
+                    "outputPath": {
+                        "type": "string",
+                        "description": "Path where to save the exported file",
+                    },
+                },
+                "required": ["brainId"],
+            },
+        },
     }

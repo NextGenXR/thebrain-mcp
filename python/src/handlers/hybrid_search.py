@@ -14,6 +14,8 @@ logger = logging.getLogger(__name__)
 
 # Cache for hybrid managers per brain
 _manager_cache: Dict[str, HybridBrainManager] = {}
+# Cache for brain_id to database path mapping
+_brain_db_cache: Dict[str, str] = {}
 
 
 async def get_or_create_manager(api, brain_id: str) -> HybridBrainManager:
@@ -25,10 +27,16 @@ async def get_or_create_manager(api, brain_id: str) -> HybridBrainManager:
         raise ImportError("Hybrid mode disabled by environment variable")
     
     if brain_id not in _manager_cache:
-        manager = HybridBrainManager(api)
+        # Check if we have a cached database path for this brain
+        db_path = _brain_db_cache.get(brain_id)
+        manager = HybridBrainManager(api, db_path)
+        
         try:
             if await manager.initialize(brain_id):
                 _manager_cache[brain_id] = manager
+                # Cache the database path for next time
+                if manager.local_db_path:
+                    _brain_db_cache[brain_id] = manager.local_db_path
             else:
                 raise ValueError(f"Failed to initialize hybrid manager for brain {brain_id}")
         except Exception as e:
@@ -134,10 +142,13 @@ async def search_thoughts_hybrid(api, args: Dict[str, Any]) -> Dict[str, Any]:
         
     except Exception as e:
         logger.error(f"Hybrid search error: {e}")
-        # Fall back to regular API search
-        logger.info("Falling back to API search")
-        from .thoughts import search_thoughts
-        return await search_thoughts(api, args)
+        # Don't fall back to search_thoughts to avoid recursion
+        # Instead, return an error
+        return {
+            "success": False,
+            "error": f"Hybrid search failed: {str(e)}",
+            "fallbackNote": "Please retry or use standard search"
+        }
 
 
 async def search_by_type(manager: HybridBrainManager, brain_id: str, type_name: str) -> List[Dict]:
@@ -199,9 +210,12 @@ async def get_thought_graph_hybrid(api, args: Dict[str, Any]) -> Dict[str, Any]:
         graph = await manager.get_thought_graph_local(brain_id, thought_id)
         
         if "error" in graph:
-            # Fall back to API if thought not found locally
-            from .thoughts import get_thought_graph
-            return await get_thought_graph(api, args)
+            # Return error instead of falling back to avoid recursion
+            return {
+                "success": False,
+                "error": graph.get("error", "Thought not found in local database"),
+                "fallbackNote": "Local database may need syncing"
+            }
         
         # Format response
         return {
@@ -213,9 +227,12 @@ async def get_thought_graph_hybrid(api, args: Dict[str, Any]) -> Dict[str, Any]:
         
     except Exception as e:
         logger.error(f"Hybrid graph error: {e}")
-        # Fall back to regular API
-        from .thoughts import get_thought_graph
-        return await get_thought_graph(api, args)
+        # Return error instead of falling back to avoid recursion
+        return {
+            "success": False,
+            "error": f"Failed to get thought graph: {str(e)}",
+            "fallbackNote": "Please retry or use standard API"
+        }
 
 
 async def get_tagged_thoughts(api, args: Dict[str, Any]) -> Dict[str, Any]:
@@ -348,10 +365,8 @@ async def get_brain_statistics(api, args: Dict[str, Any]) -> Dict[str, Any]:
         
         # Count links
         cursor.execute("""
-            SELECT COUNT(*) FROM Links l
-            JOIN Thoughts t ON (l.ThoughtIdA = t.Id OR l.ThoughtIdB = t.Id)
-            WHERE t.BrainId = ?
-        """, (brain_id,))
+            SELECT COUNT(*) FROM Links
+        """)
         stats["totalLinks"] = cursor.fetchone()[0]
         
         # Count tags
@@ -360,7 +375,7 @@ async def get_brain_statistics(api, args: Dict[str, Any]) -> Dict[str, Any]:
         
         # Count tagged thoughts
         cursor.execute("""
-            SELECT COUNT(DISTINCT ThoughtId) FROM ThoughtTags tt
+            SELECT COUNT(DISTINCT tt.ThoughtId) FROM ThoughtTags tt
             JOIN Thoughts t ON tt.ThoughtId = t.Id
             WHERE t.BrainId = ?
         """, (brain_id,))

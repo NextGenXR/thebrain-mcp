@@ -16,6 +16,13 @@ try:
 except ImportError:
     HYBRID_AVAILABLE = False
 
+# Import graph analysis handlers if available
+try:
+    from .graph import *
+    GRAPH_AVAILABLE = True
+except ImportError:
+    GRAPH_AVAILABLE = False
+
 __all__ = [
     # Thoughts
     'list_brains',
@@ -55,4 +62,14 @@ if HYBRID_AVAILABLE:
     __all__.extend([
         'get_tagged_thoughts',
         'sync_brain_data',
+    ])
+
+# Add graph analysis handlers
+if GRAPH_AVAILABLE:
+    __all__.extend([
+        'analyze_brain_graph',
+        'find_knowledge_paths',
+        'get_thought_neighborhood',
+        'find_knowledge_gaps',
+        'export_graph_visualization',
     ])

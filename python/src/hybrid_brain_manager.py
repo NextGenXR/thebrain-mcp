@@ -169,12 +169,13 @@ class HybridBrainManager:
         """Verify the local database contains the specified brain."""
         try:
             cursor = self.db_conn.cursor()
+            # Use LIMIT 1 for faster verification - we just need to know if ANY thought exists
             cursor.execute(
-                "SELECT COUNT(*) FROM Thoughts WHERE BrainId = ?", 
+                "SELECT 1 FROM Thoughts WHERE BrainId = ? LIMIT 1", 
                 (brain_id,)
             )
-            count = cursor.fetchone()[0]
-            return count > 0
+            result = cursor.fetchone()
+            return result is not None
         except sqlite3.Error:
             return False
     
@@ -560,6 +561,13 @@ class HybridBrainManager:
         """
         if not self.db_conn:
             raise ValueError("No local database connection")
+        
+        # Create indexes if not already done (lazy indexing)
+        if not self.is_indexed:
+            try:
+                await self._index_database()
+            except Exception as e:
+                logger.warning(f"Failed to create indexes: {e}")
         
         cursor = self.db_conn.cursor()
         results = []
