@@ -18,8 +18,8 @@ class LocalBrainCache:
     Access TheBrain's local SQLite database for ultra-fast thought retrieval.
     
     TheBrain stores data locally in:
-    - C:\Users\{username}\Brains\U{XX}\B{XX}\Brain.db - SQLite database
-    - C:\Users\{username}\Brains\U{XX}\B{XX}\{thought-uuid}\Notes.md - Note content
+    - C:/Users/{username}/Brains/U{XX}/B{XX}/Brain.db - SQLite database
+    - C:/Users/{username}/Brains/U{XX}/B{XX}/{thought-uuid}/Notes.md - Note content
     """
     
     def __init__(self, brain_path: str):
@@ -27,7 +27,7 @@ class LocalBrainCache:
         Initialize the local brain cache.
         
         Args:
-            brain_path: Path to the brain folder (e.g., C:\Users\joconnor\Brains\U01\B02)
+            brain_path: Path to the brain folder (e.g., C:/Users/joconnor/Brains/U01/B02)
         """
         self.brain_path = Path(brain_path)
         self.db_path = self.brain_path / "Brain.db"
