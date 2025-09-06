@@ -2,6 +2,17 @@
 
 ## Latest Updates
 
+### September 6, 2025 - Test Suite Reorganization
+- **Moved**: All test files to `python/tests/` subdirectory
+- **Cleaned**: Removed 2 redundant test files (backups saved)
+- **Structure**: 
+  - 4 core test files (installation, API, graph, hybrid)
+  - Test utilities (run_all_tests.py, cleanup_tests.py)
+  - Backup directory for removed tests
+- **Convenience**: Added test.bat/test.sh for easy test execution
+- **Documentation**: Comprehensive README.md in tests directory
+- **Result**: Clean, organized test structure with 100% pass rate
+
 ### September 6, 2025 - UV as Primary Dependency Manager
 - **Established**: UV as the primary dependency management tool
 - **Benefits**: 
