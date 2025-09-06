@@ -15,21 +15,22 @@ alwaysApply: false
 - Focus on user-facing changes and important technical improvements
 - Reference issue/ticket numbers when applicable
 
-- Keep minor changes and change details in files within the memory_bank folder. See the
+
+- For the Python verson of this project, the CHANGELOG.md will be in the `python/` folder and named `CHANGELOG_Python.md`.
+- Keep minor changes and change details in files within the `python/memory_bank/` folder.
 
 ## Version Numbering
 
-- Use semantic versioning format: `2.00.xx` where xx is incremented by 1 for each day's entry
-- When starting a new day, increment the patch version by 1 (e.g., 2.00.15 → 2.00.16)
-- When reaching 2.00.99, talk to your user about cleaning up the repo
-- Use minor version increments x.nn.xx where nn is the minor number, when there is an SDK breaking change.
-- Use major version increments (3.00.00) only for major milestones and refactoring
+- Use semantic versioning format: `2.0.x` where xx is incremented by 1 for each day's entry
+- When reaching 2.0.9, talk to your user about cleaning up the repo
+- Use minor version increments x.n.x where n is the minor number, when there is an SDK breaking change.
+- Use major version increments (3.0.0) only for major milestones and refactoring
 - Consolidate all changes for a single day under one version number.
 
 ## Entry Structure
 
-- Begin each entry with `## Version X.YY.ZZ - YYYY-MM-DD`
-- Be sure you have the correct date - ask if the date seems very wrong compared to other changes.
+- Begin each entry with `## Version X.Y.Z - YYYY-MM-DD`
+- If the date you are using is before the last entry, ask the user for the correct date.
 - Organize changes into logical categories using level 3 headers (###)
 - Common categories include:
   - Improvements

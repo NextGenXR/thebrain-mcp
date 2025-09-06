@@ -3,6 +3,7 @@
 ## Overview
 
 TheBrain's structure is fundamentally a **directed graph** where:
+
 - **Nodes** = Thoughts
 - **Edges** = Links (Parent/Child/Jump relationships)
 
@@ -11,24 +12,28 @@ Using graph analysis libraries like NetworkX, we can gain powerful insights into
 ## Why Graph Analysis?
 
 ### 1. **Understanding Structure**
+
 - Identify central/important thoughts (hubs)
 - Find isolated or orphaned thoughts
 - Detect communities of related concepts
 - Measure connectivity and density
 
 ### 2. **Navigation Optimization**
+
 - Find shortest paths between concepts
 - Identify missing links
 - Suggest new connections
 - Detect redundant paths
 
 ### 3. **Quality Improvement**
+
 - Find duplicate thoughts
 - Identify cycles and loops
 - Detect structural anomalies
 - Measure knowledge coverage
 
 ### 4. **Advanced Features**
+
 - AI-powered organization suggestions
 - Automatic clustering
 - Knowledge gap analysis

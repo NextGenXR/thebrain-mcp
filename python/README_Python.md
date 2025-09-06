@@ -4,6 +4,7 @@ A Python implementation of the Model Context Protocol (MCP) server for TheBrain 
 
 ## Features
 
+### Core Features
 - **Brain Management**: List, access, and manage multiple brains
 - **Thought Operations**: Create, update, delete, and search thoughts with visual properties
 - **Link Management**: Create and manage links between thoughts with graphical properties  
@@ -11,6 +12,14 @@ A Python implementation of the Model Context Protocol (MCP) server for TheBrain 
 - **Notes**: Create and manage markdown notes for thoughts
 - **Search**: Full-text search across thoughts and notes
 - **Statistics**: Get brain statistics and modification history
+
+### Advanced Features
+- **Graph Analysis**: Analyze brain structure using NetworkX to find patterns, communities, and insights
+- **Local/Hybrid Mode**: Work with local SQLite database for performance and offline access
+- **Path Finding**: Discover shortest paths and connections between thoughts
+- **Duplicate Detection**: Find and manage duplicate thoughts
+- **Community Detection**: Identify clusters of related concepts
+- **Centrality Analysis**: Find the most important/connected thoughts in your brain
 
 ## Installation
 
@@ -229,16 +238,52 @@ thebrain-mcp
 - `get_brain_stats` - Get statistics about a brain
 - `get_modifications` - Get modification history for a brain
 
+## Graph Analysis with NetworkX
+
+TheBrain's structure is fundamentally a directed graph (thoughts as nodes, links as edges). The Python version includes powerful graph analysis capabilities using NetworkX.
+
+### Quick Start
+```python
+from src.graph_analyzer import BrainGraphAnalyzer
+
+# Load your Brain database
+analyzer = BrainGraphAnalyzer("C:/Users/YourName/Brains/U01/B02/Brain.db")
+
+# Get statistics
+stats = analyzer.get_statistics()
+print(f"Total thoughts: {stats['basic']['total_thoughts']}")
+print(f"Orphaned thoughts: {stats['orphaned_thoughts']['count']}")
+
+# Find central thoughts
+central = analyzer.find_central_thoughts(top_n=10)
+
+# Detect communities
+communities = analyzer.find_communities()
+```
+
+### Key Capabilities
+- **Structure Analysis**: Understand connectivity, density, and organization
+- **Path Finding**: Find shortest paths between concepts
+- **Centrality Measures**: Identify important hub thoughts
+- **Community Detection**: Find clusters of related concepts
+- **Duplicate Detection**: Find thoughts with duplicate names
+- **Cycle Detection**: Identify circular references
+- **Visualization**: Export to Gephi, create interactive HTML graphs
+
+📚 **See [Graph Analysis Guide](docs/graph-analysis-guide.md) for comprehensive documentation on using NetworkX with TheBrain.**
+
 ## Development
 
 ### Documentation
 
 - [API Integration Guide](THEBRAIN_API_GUIDE.md) - Detailed guide on TheBrain API quirks and patterns
-- [Brain Database Structure](BRAIN_DATABASE_STRUCTURE.md) - Complete analysis of local SQLite database
-- [Performance Optimization](PERFORMANCE_OPTIMIZATION.md) - Strategies for handling large brains with thousands of thoughts  
+- [Brain Database Structure](docs/BRAIN_DATABASE_STRUCTURE.md) - Complete analysis of local SQLite database
+- [Graph Analysis Guide](docs/graph-analysis-guide.md) - **Comprehensive guide to using NetworkX for brain analysis**
+- [Hybrid Architecture](docs/hybrid-architecture.md) - Local/hybrid mode for performance optimization
+- [Performance Optimization](memory_bank/status/PERFORMANCE_OPTIMIZATION.md) - Strategies for handling large brains  
 - [Troubleshooting Guide](TROUBLESHOOTING.md) - Common issues and solutions
-- [Client Setup Guide](SETUP_CLIENT.md) - How to connect to Claude Desktop and other clients
-- [API Learnings](API_LEARNINGS.md) - Key discoveries about API behavior vs documentation
+- [Client Setup Guide](docs/SETUP_CLIENT.md) - How to connect to Claude Desktop and other clients
+- [API Learnings](docs/API_LEARNINGS.md) - Key discoveries about API behavior vs documentation
 
 ## Project Structure
 ```
@@ -262,16 +307,23 @@ python/
 ├── run.bat               # Windows pip run script
 ├── run.sh                # Unix/Linux pip run script
 └── src/
-    ├── __init__.py       # Package initialization
-    ├── api_client.py     # TheBrain API client
-    ├── tool_schemas.py   # Tool schema definitions
-    └── handlers/         # Tool implementation handlers
+    ├── __init__.py              # Package initialization
+    ├── api_client.py            # TheBrain API client
+    ├── graph_analyzer.py        # NetworkX-based graph analysis
+    ├── hybrid_brain_manager.py  # Hybrid local/remote mode manager
+    ├── local_brain_cache.py     # Local SQLite database interface
+    ├── markdown_formatter.py    # Markdown formatting utilities
+    ├── tool_schemas.py          # Tool schema definitions
+    └── handlers/                # Tool implementation handlers
         ├── __init__.py
-        ├── thoughts.py   # Thought operations
-        ├── links.py      # Link operations
-        ├── attachments.py # Attachment operations
-        ├── notes.py      # Note operations
-        └── stats.py      # Statistics operations
+        ├── thoughts.py          # Thought operations
+        ├── thoughts_optimized.py # Performance-optimized thought operations
+        ├── links.py             # Link operations
+        ├── attachments.py       # Attachment operations
+        ├── notes.py             # Note operations
+        ├── stats.py             # Statistics operations
+        ├── graph.py             # Graph analysis handlers
+        └── hybrid_search.py     # Hybrid search operations
 ```
 
 ### Testing

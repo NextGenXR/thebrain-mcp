@@ -150,3 +150,4 @@ The system is now **intelligent by default**. You don't need to:
 - Configure anything
 
 Just use the normal TheBrain MCP functions and get the best possible results automatically! 🚀
+
