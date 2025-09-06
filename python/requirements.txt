@@ -1,3 +1,15 @@
+# ⚠️ DEPRECATED - Use UV with pyproject.toml instead ⚠️
+#
+# This file is kept for backward compatibility only.
+# TheBrain MCP uses UV as the primary dependency manager.
+#
+# To install dependencies, use:
+#   uv pip install -e .
+#
+# See UV_SETUP_GUIDE.md for details.
+#
+# ================================================
+
 # MCP SDK for Python
 mcp>=1.0.0
 
@@ -15,3 +27,13 @@ typing-extensions>=4.9.0
 
 # JSON schema validation  
 jsonschema>=4.20.0
+
+# Graph analysis capabilities
+networkx>=3.0
+pandas>=2.0.0
+matplotlib>=3.5.0
+
+# Optional but recommended for advanced features
+# python-louvain>=0.16  # Community detection
+# pyvis>=0.3.0  # Interactive visualization
+# plotly>=5.0.0  # Advanced plotting

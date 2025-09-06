@@ -19,9 +19,11 @@ A Python implementation of the Model Context Protocol (MCP) server for TheBrain 
 - Python 3.10 or higher
 - TheBrain API key (get it from your TheBrain account settings)
 
-### Quick Setup with UV (Recommended)
+### Quick Setup with UV (Primary Dependency Manager)
 
-We recommend using [UV](https://github.com/astral-sh/uv) for fast, reliable Python package management. UV will automatically handle Python installation, virtual environments, and dependencies.
+**UV is the primary dependency management tool for this project.** [UV](https://github.com/astral-sh/uv) provides fast, reliable Python package management - it's 10-100x faster than pip and ensures consistent dependency resolution. UV will automatically handle Python installation, virtual environments, and all dependencies.
+
+📚 **See [UV_SETUP_GUIDE.md](UV_SETUP_GUIDE.md) for comprehensive UV documentation.**
 
 #### Windows
 

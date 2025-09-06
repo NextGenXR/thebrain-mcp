@@ -27,6 +27,17 @@ dependencies = [
     "aiofiles>=23.0.0",
     "typing-extensions>=4.9.0",
     "jsonschema>=4.20.0",
+    # Graph analysis capabilities
+    "networkx>=3.0",
+    "pandas>=2.0.0",
+    "matplotlib>=3.5.0",
+]
+
+[project.optional-dependencies]
+visualization = [
+    "python-louvain>=0.16",  # Community detection
+    "pyvis>=0.3.0",          # Interactive visualization
+    "plotly>=5.0.0",         # Advanced plotting
 ]
 
 [project.scripts]

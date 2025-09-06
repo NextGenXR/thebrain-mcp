@@ -62,16 +62,17 @@ if (Test-Path ".venv") {
 & $uvPath venv
 
 Write-Host ""
-Write-Host "[3/5] Installing dependencies with UV..." -ForegroundColor Yellow
-& $uvPath pip install -r requirements.txt
+Write-Host "[3/5] Installing project dependencies with UV..." -ForegroundColor Yellow
+& $uvPath pip sync
 
 Write-Host ""
-Write-Host "[4/5] Installing development dependencies..." -ForegroundColor Yellow
-& $uvPath pip install pytest pytest-asyncio black ruff
-
-Write-Host ""
-Write-Host "[5/5] Installing package in editable mode..." -ForegroundColor Yellow
+Write-Host "[4/5] Installing package in editable mode with all dependencies..." -ForegroundColor Yellow
 & $uvPath pip install -e .
+
+Write-Host ""
+Write-Host "[5/5] Installing optional visualization dependencies (optional)..." -ForegroundColor Yellow
+Write-Host "Installing visualization extras..." -ForegroundColor Gray
+& $uvPath pip install -e ".[visualization]" 2>$null
 
 Write-Host ""
 Write-Host "========================================" -ForegroundColor Green
