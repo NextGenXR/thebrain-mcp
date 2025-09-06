@@ -5,10 +5,16 @@ alwaysApply: true
 
 This policy defines where to place auto-generated and working markdown notes vs. formal documentation.
 
-- Put auto-generated fix/refactor summaries, progress breadcrumbs, and active context notes in `memory_bank/`.
-- Put plans, specs, design docs, and long-form documentation in `docs/`.
+## Python Project File Locations
 
-Recommended `memory_bank/` files (per Thinking Models rules):
+For this project, The Brain MCP, place any Python-related memory_bank files into the `python/memory_bank/` folder.
+
+- Put auto-generated fix/refactor summaries, progress breadcrumbs, and active context notes in `python/memory_bank/`.
+- Put plans, specs, design docs, and long-form documentation in `python/docs/`.
+
+## Required Memory Bank Files
+
+Within the `memory_bank/` folder, these files are required (per Thinking Models rules):
 
 - `projectbrief.md`, `techContext.md`, `systemPatterns.md`, `productContext.md`, `activeContext.md`, `progress.md`.
 
@@ -16,13 +22,15 @@ Naming convention for auto-generated entries:
 
 - `YYYY-MM-DD-title.md` (e.g., `2025-08-15-backlog-sync.md`).
 
+If you think the date is before the last entry, ask for clarification. 
+
 Rationale:
 
 - Keeps evolving context lightweight and close to day-to-day work
 - Preserves clarity by reserving `docs/` for durable documentation
 - Keep minor changes and change details in files within the memory_bank folder. See the Memory Bank Policy for details on organizing working notes and technical implementation details.
 
-- Retain essential files for future reference in `memory_bank/` and its subfolders.
+- Retain essential files for future reference in `memory_bank/` and its sub-folders.
 
 - Recommended structure:
 
@@ -35,4 +43,18 @@ your-project/
     ├── productContext.md
     ├── activeContext.md
     └── progress.md
+```
+
+- Recommended structure for the Python version:
+
+```text
+your-project/
+└── python/
+    └──memory_bank/
+        ├── projectbrief.md
+        ├── techContext.md
+        ├── systemPatterns.md
+        ├── productContext.md
+        ├── activeContext.md
+        └── progress.md
 ```

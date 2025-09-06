@@ -2,6 +2,21 @@
 
 ## Latest Updates
 
+### September 6, 2025 - Privacy and Security Cleanup
+- **Removed**: All personal identifiable information from code and docs
+- **Replaced**: Hard-coded user paths with environment variables (%USERPROFILE%, ~/)
+- **Sanitized**: Company-specific references (NVIDIA → Main Project/Company)
+- **Genericized**: Personal names (Beau Perschall → Project Lead, John Smith)
+- **Updated**: Project references (Mega/SimReady → Main/Sub Projects)
+- **Result**: Clean, privacy-compliant codebase ready for public sharing
+
+### September 6, 2025 - Virtual Environment Standardization
+- **Fixed**: Standardized on `.venv` (with dot) as the virtual environment name
+- **Removed**: Redundant `venv` directory created by old setup scripts
+- **Updated**: All setup and run scripts to use `.venv` consistently
+- **Maintained**: UV as primary tool correctly uses `.venv` by default
+- **Result**: Clean, consistent virtual environment naming across all scripts
+
 ### September 6, 2025 - Test Suite Reorganization
 - **Moved**: All test files to `python/tests/` subdirectory
 - **Cleaned**: Removed 2 redundant test files (backups saved)

@@ -23,6 +23,14 @@
    - Duplicate detection and structural analysis
    - Export to GraphML for visualization
 
+4. **Privacy and Security Cleanup** (2025-09-06)
+   - Removed all personal identifiable information
+   - Replaced hard-coded paths with environment variables
+   - Sanitized company-specific references
+   - Genericized all personal and project names
+   - Test suite reorganized into tests/ subdirectory
+   - Virtual environment standardized to .venv
+
 ### Active Work 🔄
 
 #### High Priority Issues
