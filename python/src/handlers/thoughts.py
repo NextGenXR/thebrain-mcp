@@ -369,6 +369,26 @@ async def search_thoughts(api, args: Dict[str, Any]) -> Dict[str, Any]:
                 })
                 all_results = thoughts + attachments
         
+        # Also try to resolve thoughts that need ID lookup
+        for i, thought in enumerate(thoughts):
+            if thought.get("needsIdLookup") and thought.get("name"):
+                # Try to find the real thought ID through graph search
+                found_thought = await find_thought_by_name(api, brain_id, thought.get("name"))
+                if found_thought and found_thought.get("id"):
+                    # Replace the placeholder with the real thought
+                    thoughts[i] = {
+                        **found_thought,
+                        "type": "thought",
+                        "foundViaGraph": True,
+                        "resolvedFromPlaceholder": True,
+                    }
+                    # Ensure both id and thoughtId are present
+                    if "id" in thoughts[i]:
+                        thoughts[i]["thoughtId"] = thoughts[i].get("thoughtId", thoughts[i]["id"])
+        
+        # Rebuild all_results after potential updates
+        all_results = thoughts + attachments
+        
         return {
             "success": True,
             "results": all_results,  # Mixed results
