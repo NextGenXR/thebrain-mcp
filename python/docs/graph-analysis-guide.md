@@ -46,7 +46,14 @@ Using graph analysis libraries like NetworkX, we can gain powerful insights into
 ```python
 from src.graph_analyzer import BrainGraphAnalyzer
 
-# Load your Brain database
+# Load your Brain database - supports environment variables!
+# Option 1: Using environment variables (cross-platform)
+analyzer = BrainGraphAnalyzer("~/Brains/U01/B02/Brain.db")
+
+# Option 2: Using %USERPROFILE% on Windows
+analyzer = BrainGraphAnalyzer("%USERPROFILE%/Brains/U01/B02/Brain.db")
+
+# Option 3: Absolute path
 analyzer = BrainGraphAnalyzer("C:/Users/YourName/Brains/U01/B02/Brain.db")
 
 # Load the graph
@@ -364,6 +371,11 @@ pip install python-louvain pyvis plotly
 
 2. **Run Analysis**:
 ```bash
+# The script automatically finds your Brain database if in standard location
+python src/graph_analyzer.py
+
+# Or specify a custom path (supports environment variables)
+python src/graph_analyzer.py "~/Brains/U01/B02/Brain.db"
 python src/graph_analyzer.py "%USERPROFILE%/Brains/U01/B02/Brain.db"
 ```
 

@@ -1,5 +1,7 @@
 {
   "_comment": "TheBrain MCP uses UV as the primary dependency manager",
+  "_comment2": "THEBRAIN_LOCAL_DB_PATH is optional - leave empty to auto-detect, or set to custom path",
+  "_comment3": "Path supports environment variables: %USERPROFILE%\\Brains or ~/Brains",
   "mcpServers": {
     "thebrain": {
       "command": "C:\\Users\\YOUR_USER_NAME_HERE\\.local\\bin\\uv.exe",
@@ -8,6 +10,7 @@
       "env": {
         "THEBRAIN_API_KEY": "YOUR_API_KEY_HERE",
         "THEBRAIN_DEFAULT_BRAIN_ID": "",
+        "THEBRAIN_LOCAL_DB_PATH": "",
         "UV_PROJECT_ROOT": "C:\\Git\\thebrain-mcp\\python"
       }
     }

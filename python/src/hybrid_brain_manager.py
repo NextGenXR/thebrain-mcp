@@ -16,6 +16,7 @@ from pathlib import Path
 from datetime import datetime, timedelta
 from typing import Dict, Any, List, Optional, Tuple
 import logging
+from .path_utils import find_brain_database, get_brain_path_from_env, format_path_for_display
 
 logger = logging.getLogger(__name__)
 
@@ -54,47 +55,27 @@ class HybridBrainManager:
         Returns:
             Path to database file or None if not found
         """
-        # TheBrain's standard directory structure
-        brains_dir = Path.home() / "Brains"
+        # First check if there's a custom path from environment
+        custom_path = get_brain_path_from_env()
         
-        # First check the standard Brains directory structure
+        # Use our centralized path finder
+        db_path = find_brain_database(brain_id, str(custom_path) if custom_path else None)
+        
+        if db_path:
+            logger.info(f"Found local Brain database: {format_path_for_display(db_path)}")
+            return str(db_path)
+        
+        # If not found with new method, try the old User.db pattern
+        # (keeping backward compatibility with existing code)
+        brains_dir = Path.home() / "Brains"
         if brains_dir.exists():
-            # TheBrain uses subdirectories like U00, U01, etc.
             for brain_subdir in brains_dir.iterdir():
                 if brain_subdir.is_dir():
                     # Look for User.db in each subdirectory
                     user_db = brain_subdir / "User.db"
                     if user_db.exists():
-                        logger.info(f"Found local Brain database: {user_db}")
-                        # If we have a brain_id, verify it's the right one
-                        if brain_id:
-                            # We'll verify the brain_id later in the initialize method
-                            return str(user_db)
-                        else:
-                            # Return the first one found
-                            return str(user_db)
-        
-        # Fallback to other possible locations
-        possible_paths = [
-            # Other Windows paths
-            Path.home() / "Documents" / "TheBrain" / "*.db",
-            Path.home() / "AppData" / "Local" / "TheBrain" / "*.db",
-            # macOS paths  
-            Path.home() / "Library" / "Application Support" / "TheBrain" / "*.db",
-            # Linux paths
-            Path.home() / ".thebrain" / "*.db",
-            Path.home() / ".local" / "share" / "thebrain" / "*.db",
-        ]
-        
-        for pattern in possible_paths:
-            try:
-                for db_file in pattern.parent.glob(pattern.name):
-                    if db_file.exists():
-                        logger.info(f"Found local Brain database: {db_file}")
-                        return str(db_file)
-            except (OSError, ValueError):
-                # Skip if path doesn't exist or glob fails
-                continue
+                        logger.info(f"Found local Brain database (User.db): {format_path_for_display(user_db)}")
+                        return str(user_db)
         
         return None
     

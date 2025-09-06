@@ -217,6 +217,16 @@ async def main():
     if active_brain_id:
         print(f"[DEBUG] Default brain ID set: {active_brain_id}", file=sys.stderr)
     
+    # Log database path if configured
+    db_path = os.getenv("THEBRAIN_LOCAL_DB_PATH")
+    if db_path:
+        from src.path_utils import expand_path, format_path_for_display
+        expanded = expand_path(db_path)
+        if expanded and expanded.exists():
+            print(f"[DEBUG] Local database path configured: {format_path_for_display(expanded)}", file=sys.stderr)
+        else:
+            print(f"[WARNING] Configured database path not found: {db_path}", file=sys.stderr)
+    
     # Create and configure the server
     server = Server("thebrain-mcp")
     

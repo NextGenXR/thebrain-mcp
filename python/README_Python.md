@@ -109,16 +109,53 @@ pip install -e .
 
 ## Configuration
 
-1. Copy the `.env.example` file to `.env`:
+1. Copy the `env.example` file to `.env`:
 ```bash
-cp .env.example .env
+cp env.example .env
 ```
 
-2. Edit `.env` and add your TheBrain API key:
-```
+2. Edit `.env` and configure your settings:
+
+```bash
+# REQUIRED: Your TheBrain API key
 THEBRAIN_API_KEY=your_api_key_here
+
+# OPTIONAL: Default brain ID
 THEBRAIN_DEFAULT_BRAIN_ID=optional_default_brain_id
+
+# OPTIONAL: Path to local Brain database directory
+# Leave empty to use default locations
+# Supports environment variables and ~ expansion
+THEBRAIN_LOCAL_DB_PATH=
+
+# Examples for different platforms:
+# Windows:   %USERPROFILE%\Brains
+# Windows:   C:\Users\YourName\Documents\TheBrain
+# macOS:     ~/Brains  
+# macOS:     ~/Library/Application Support/TheBrain
+# Linux:     ~/.local/share/thebrain
 ```
+
+### Database Path Configuration
+
+The server automatically searches for your Brain database in standard locations:
+
+**Windows:**
+- `%USERPROFILE%\Brains` (default)
+- `%USERPROFILE%\Documents\TheBrain`
+- `%APPDATA%\TheBrain\Brains`
+
+**macOS:**
+- `~/Brains` (default)
+- `~/Library/Application Support/TheBrain`
+- `~/Documents/TheBrain`
+
+**Linux:**
+- `~/Brains` (default)
+- `~/.local/share/thebrain`
+- `~/.thebrain`
+
+If your Brain database is in a non-standard location, set `THEBRAIN_LOCAL_DB_PATH` in your `.env` file.
 
 ## Usage
 

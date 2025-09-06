@@ -15,6 +15,12 @@ import logging
 import json
 from collections import defaultdict, Counter
 
+# Handle both module and direct script execution
+try:
+    from .path_utils import expand_path, find_brain_database, get_brain_path_from_env, format_path_for_display, get_default_brain_paths
+except ImportError:
+    from path_utils import expand_path, find_brain_database, get_brain_path_from_env, format_path_for_display, get_default_brain_paths
+
 logger = logging.getLogger(__name__)
 
 
@@ -31,8 +37,20 @@ class BrainGraphAnalyzer:
     """
     
     def __init__(self, db_path: str):
-        """Initialize with path to Brain.db file."""
+        """
+        Initialize with path to Brain.db file.
+        
+        Args:
+            db_path: Path to Brain.db file (supports environment variables and ~)
+        """
+        # Expand path if it contains environment variables or ~
+        if db_path:
+            db_path = str(expand_path(db_path))
         self.db_path = db_path
+        
+        if not Path(db_path).exists():
+            raise FileNotFoundError(f"Brain database not found at {format_path_for_display(Path(db_path))}")
+            
         self.conn = sqlite3.connect(db_path)
         self.conn.row_factory = sqlite3.Row
         self.graph = None
@@ -167,8 +185,13 @@ class BrainGraphAnalyzer:
             'degree': nx.degree_centrality(self.graph),
             'betweenness': nx.betweenness_centrality(self.graph),
             'closeness': nx.closeness_centrality(self.graph),
-            'pagerank': nx.pagerank(self.graph),
         }
+        
+        # PageRank requires scipy, so make it optional
+        try:
+            centrality_measures['pagerank'] = nx.pagerank(self.graph)
+        except ImportError:
+            logger.warning("scipy not installed, skipping PageRank calculation")
         
         results = {}
         for measure_name, scores in centrality_measures.items():
@@ -462,15 +485,32 @@ def analyze_brain_database(db_path: str):
 if __name__ == "__main__":
     # Example: Analyze a Brain database
     import sys
+    import os
     
     if len(sys.argv) > 1:
-        db_path = sys.argv[1]
+        # User provided a path - expand it
+        db_path = expand_path(sys.argv[1])
     else:
-        # Default path for Windows
-        db_path = Path.home() / "Brains" / "U01" / "B02" / "Brain.db"
+        # Try to find database automatically
+        # First check environment variable
+        env_path = get_brain_path_from_env()
+        if env_path:
+            db_path = find_brain_database(custom_path=str(env_path))
+        else:
+            # Search in default locations
+            db_path = find_brain_database()
+        
+        if not db_path:
+            # Fallback to old default
+            db_path = Path.home() / "Brains" / "U01" / "B02" / "Brain.db"
     
-    if Path(db_path).exists():
+    if db_path and Path(db_path).exists():
+        print(f"Analyzing database: {format_path_for_display(Path(db_path))}")
         analyzer = analyze_brain_database(str(db_path))
     else:
-        print(f"Database not found at {db_path}")
-        print("Usage: python graph_analyzer.py <path_to_Brain.db>")
+        print("Database not found. Please specify path as argument.")
+        print(f"Usage: python {sys.argv[0]} [path_to_Brain.db]")
+        print(f"\nSearched locations:")
+        for path in get_default_brain_paths():
+            print(f"  - {format_path_for_display(path)}")
+        sys.exit(1)
