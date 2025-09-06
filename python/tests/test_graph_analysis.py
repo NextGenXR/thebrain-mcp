@@ -26,7 +26,7 @@ def test_graph_analysis():
     # Find Brain database
     # Try the path we saw in the user's open files
     possible_paths = [
-        Path(r"C:\Users\joconnor\Brains\U01\B02\Brain.db"),
+        Path(os.path.expanduser("~/Brains/U01/B02/Brain.db")),
         Path.home() / "Brains" / "U01" / "B02" / "Brain.db",
         Path.home() / "Brains" / "U00" / "B00" / "Brain.db",
     ]

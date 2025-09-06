@@ -27,7 +27,7 @@ class LocalBrainCache:
         Initialize the local brain cache.
         
         Args:
-            brain_path: Path to the brain folder (e.g., C:/Users/joconnor/Brains/U01/B02)
+            brain_path: Path to the brain folder (e.g., ~/Brains/U01/B02)
         """
         self.brain_path = Path(brain_path)
         self.db_path = self.brain_path / "Brain.db"
@@ -313,14 +313,14 @@ class HybridBrainCache:
 # Example usage
 if __name__ == "__main__":
     # Test with your local brain
-    brain_path = r"C:\Users\joconnor\Brains\U01\B02"
+    brain_path = os.path.expanduser("~/Brains/U01/B02")
     
     cache = LocalBrainCache(brain_path)
     cache.build_index()
     
     # Instant search!
-    results = cache.search_thoughts("Beau Perschall")
-    print(f"Found {len(results)} results for 'Beau Perschall'")
+    results = cache.search_thoughts("Project Lead")
+    print(f"Found {len(results)} results for 'Project Lead'")
     
     if results:
         thought = results[0]

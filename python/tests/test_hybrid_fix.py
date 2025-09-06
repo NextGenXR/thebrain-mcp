@@ -32,8 +32,8 @@ async def test_hybrid_search():
     
     api = TheBrainAPIClient(api_key)
     
-    # Test brain ID (NVIDIA brain from user's example)
-    brain_id = "ea013fe6-e72a-4b06-af74-15167e0cf5e3"
+    # Test brain ID (use your default brain or provide as env var)
+    brain_id = os.getenv("THEBRAIN_DEFAULT_BRAIN_ID", "your-brain-id-here")
     
     logger.info("=== Testing Hybrid Search Fixes ===")
     

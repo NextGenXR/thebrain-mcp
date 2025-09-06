@@ -41,10 +41,10 @@ async def test_search():
             print("No brains found!")
             return
         
-        # Use first brain or NVIDIA brain
+        # Use first brain or main brain
         brain = brains[0]
         for b in brains:
-            if "NVIDIA" in b.get("name", ""):
+            if "Main" in b.get("name", ""):
                 brain = b
                 break
         

@@ -25,15 +25,15 @@ echo "Found Python $PYTHON_VERSION"
 
 echo
 echo "[1/4] Creating virtual environment..."
-if [ -d "venv" ]; then
+if [ -d ".venv" ]; then
     echo "Virtual environment already exists. Removing old one..."
-    rm -rf venv
+    rm -rf .venv
 fi
-python3 -m venv venv
+python3 -m venv .venv
 
 echo
 echo "[2/4] Activating virtual environment..."
-source venv/bin/activate
+source .venv/bin/activate
 
 echo
 echo "[3/4] Upgrading pip..."
@@ -49,7 +49,7 @@ echo "Setup completed successfully!"
 echo "========================================${NC}"
 echo
 echo "To activate the virtual environment, run:"
-echo "  source venv/bin/activate"
+echo "  source .venv/bin/activate"
 echo
 echo "To run the server:"
 echo "  python main.py"

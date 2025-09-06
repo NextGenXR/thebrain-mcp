@@ -20,15 +20,15 @@ catch {
 
 Write-Host ""
 Write-Host "[1/4] Creating virtual environment..." -ForegroundColor Yellow
-if (Test-Path "venv") {
+if (Test-Path ".venv") {
     Write-Host "Virtual environment already exists. Removing old one..." -ForegroundColor Yellow
-    Remove-Item -Path "venv" -Recurse -Force
+    Remove-Item -Path ".venv" -Recurse -Force
 }
-python -m venv venv
+python -m venv .venv
 
 Write-Host ""
 Write-Host "[2/4] Activating virtual environment..." -ForegroundColor Yellow
-& "venv\Scripts\Activate.ps1"
+& ".venv\Scripts\Activate.ps1"
 
 Write-Host ""
 Write-Host "[3/4] Upgrading pip..." -ForegroundColor Yellow
@@ -44,7 +44,7 @@ Write-Host "Setup completed successfully!" -ForegroundColor Green
 Write-Host "========================================" -ForegroundColor Green
 Write-Host ""
 Write-Host "To activate the virtual environment, run:" -ForegroundColor Cyan
-Write-Host "  venv\Scripts\Activate.ps1" -ForegroundColor White
+Write-Host "  .venv\Scripts\Activate.ps1" -ForegroundColor White
 Write-Host ""
 Write-Host "To run the server:" -ForegroundColor Cyan
 Write-Host "  python main.py" -ForegroundColor White

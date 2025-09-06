@@ -17,15 +17,15 @@ if errorlevel 1 (
 )
 
 echo [1/4] Creating virtual environment...
-if exist venv (
+if exist .venv (
     echo Virtual environment already exists. Removing old one...
-    rmdir /s /q venv
+    rmdir /s /q .venv
 )
-python -m venv venv
+python -m venv .venv
 
 echo.
 echo [2/4] Activating virtual environment...
-call venv\Scripts\activate.bat
+call .venv\Scripts\activate.bat
 
 echo.
 echo [3/4] Upgrading pip...
@@ -41,7 +41,7 @@ echo Setup completed successfully!
 echo ========================================
 echo.
 echo To activate the virtual environment, run:
-echo   venv\Scripts\activate.bat
+echo   .venv\Scripts\activate.bat
 echo.
 echo To run the server:
 echo   python main.py
