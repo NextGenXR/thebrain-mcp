@@ -1,0 +1,38 @@
+---
+alwaysApply: true
+---
+# Memory Bank Policy
+
+This policy defines where to place auto-generated and working markdown notes vs. formal documentation.
+
+- Put auto-generated fix/refactor summaries, progress breadcrumbs, and active context notes in `memory_bank/`.
+- Put plans, specs, design docs, and long-form documentation in `docs/`.
+
+Recommended `memory_bank/` files (per Thinking Models rules):
+
+- `projectbrief.md`, `techContext.md`, `systemPatterns.md`, `productContext.md`, `activeContext.md`, `progress.md`.
+
+Naming convention for auto-generated entries:
+
+- `YYYY-MM-DD-title.md` (e.g., `2025-08-15-backlog-sync.md`).
+
+Rationale:
+
+- Keeps evolving context lightweight and close to day-to-day work
+- Preserves clarity by reserving `docs/` for durable documentation
+- Keep minor changes and change details in files within the memory_bank folder. See the Memory Bank Policy for details on organizing working notes and technical implementation details.
+
+- Retain essential files for future reference in `memory_bank/` and its subfolders.
+
+- Recommended structure:
+
+```text
+your-project/
+└── memory_bank/
+    ├── projectbrief.md
+    ├── techContext.md
+    ├── systemPatterns.md
+    ├── productContext.md
+    ├── activeContext.md
+    └── progress.md
+```

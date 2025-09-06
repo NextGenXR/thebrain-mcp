@@ -1,0 +1,101 @@
+---
+description: Rules for maintaining CHANGELOG.md files
+alwaysApply: false
+---
+# Changelog Maintenance Rules
+
+## General Guidelines
+
+- Follow [Keep a Changelog](mdc:https:/keepachangelog.com/en/1.1.0) format
+- Always update the [CHANGELOG.md](mdc:CHANGELOG.md) when code changes are made
+- Keep the changelog in strict reverse chronological order (newest entries at top)
+- Use ISO 8601 date format (YYYY-MM-DD) for all entries
+- Group related changes under appropriate section headers
+- Use clear, concise language to describe changes
+- Focus on user-facing changes and important technical improvements
+- Reference issue/ticket numbers when applicable
+
+- Keep minor changes and change details in files within the memory_bank folder. See the
+
+## Version Numbering
+
+- Use semantic versioning format: `2.00.xx` where xx is incremented by 1 for each day's entry
+- When starting a new day, increment the patch version by 1 (e.g., 2.00.15 → 2.00.16)
+- When reaching 2.00.99, talk to your user about cleaning up the repo
+- Use minor version increments x.nn.xx where nn is the minor number, when there is an SDK breaking change.
+- Use major version increments (3.00.00) only for major milestones and refactoring
+- Consolidate all changes for a single day under one version number.
+
+## Entry Structure
+
+- Begin each entry with `## Version X.YY.ZZ - YYYY-MM-DD`
+- Be sure you have the correct date - ask if the date seems very wrong compared to other changes.
+- Organize changes into logical categories using level 3 headers (###)
+- Common categories include:
+  - Improvements
+  - Bug Fixes
+  - New Features
+  - API Changes
+  - Performance Improvements
+  - Documentation
+  - Database Improvements
+  - UI Enhancements
+
+## Entry Format
+
+- Use bulleted lists (with `-`) for individual changes
+- Start each bullet with a capitalized verb in past tense (Added, Fixed, Improved, Updated, etc.)
+- Be specific about what changed and why, when relevant
+- For complex changes, use nested bullets to provide additional details
+- Use code formatting with backticks (`) for code references, files, and paths
+- Keep entries focused on the what, not the how
+- Limit each bullet to one logical change
+
+## Entry Content
+
+- Highlight changes visible to the end-user
+- Mention significant internal architectural changes
+- Include database schema changes
+- Document API additions, changes, and deprecations
+- Note performance improvements
+- Reference UI changes and enhancements
+- Include security fixes (without revealing exploitable details)
+- Document changes to dependencies and third-party integrations
+
+## Maintenance Practices
+
+- Remove older entries only after proper archiving
+- Maintain a "Previous Versions" section when condensing older entries
+- Group previous versions by major feature categories
+- Keep the file size manageable by archiving old entries periodically
+- Update changelog before merging code to main branch
+- Review changelog entries for clarity and completeness
+
+## Example Entry
+
+```markdown
+## Version 2.0.15 - 2025-04-02
+
+### Improvements
+
+- Added Word and QCode Manager application with AWS database integration
+- Implemented asset management system with classification and type support
+- Added S3 integration for asset image storage with multiple resolution support
+- Created user-friendly GUI with search, import/export, and thumbnail display
+- Added comprehensive logging and error handling throughout the application
+
+### Bug Fixes
+
+- Fixed database connection issue when AWS credentials are missing
+- Resolved UI freezing during large import operations
+- Fixed thumbnail display scaling in asset browser
+```
+
+## Additional Guidelines
+
+- Keep the main changelog file focused on user-relevant changes
+- Maintain technical details in separate documentation
+- Review changelog entries during code review process
+- Ensure consistency in style and level of detail across entries
+- Focus on impact rather than implementation details
+- Make entries understandable to non-technical stakeholders when possible

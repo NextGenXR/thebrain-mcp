@@ -1,0 +1,316 @@
+---
+description: Python development guidelines and best practices
+version: 1.0.0
+lastModified: 2024-04-19
+tags: [python, development]
+globs: ["**/*.py"]
+alwaysApply: true
+---
+
+# Python Development Guidelines Part 2
+
+## Key Learnings from Recent Fixes
+
+### 1. Exception Handling
+
+**Issue**: Broad exception catching (`except Exception:`) was masking programming errors.
+
+**Solution**:
+
+- Catch only specific, expected exceptions
+- For file operations: `OSError` (covers FileNotFoundError, PermissionError, IOError)
+- For TOML parsing: `tomllib.TOMLDecodeError` (reading), `TypeError` (writing)
+- Let programming errors (AttributeError, NameError, TypeError) propagate
+
+**Example Fix**: `src/project/project.py` lines 42, 59-64
+
+### 2. Security - Path Traversal Prevention
+
+**Issue**: `zip_ref.extractall()` vulnerable to zip-slip attacks.
+
+**Solution**:
+
+- Iterate through `zip_ref.infolist()`
+- Validate each path with `Path.resolve()` and `relative_to()`
+- Skip files attempting directory traversal
+- Log security warnings
+
+**Example Fix**: `src/project/project_manager.py` lines 331-361
+
+### 3. Destructive Operations Safety
+
+**Issue**: `delete_project()` could delete without confirmation or backup.
+
+**Solution**:
+
+- Added `confirm: bool = False` parameter (must be True to proceed)
+- Added `backup: bool = True` parameter (default backs up instead of deleting)
+- Timestamped backups in `_backups/` directory
+- Clear logging of operations
+
+**Example Fix**: `src/project/project_manager.py` lines 209-262
+
+### 4. File Collision Handling
+
+**Issue**: Image copying could overwrite existing files without warning.
+
+**Solution**:
+
+- Check if target exists
+- Compare size/mtime to detect identical files (skip)
+- Generate unique names with numeric suffix for different files
+- Track and log: copied, renamed, skipped counts
+
+**Example Fix**: `src/project/project_manager.py` lines 306-366
+
+### 5. Parameter Mutation Prevention
+
+**Issue**: Directly extending caller's list parameter caused hidden side effects.
+
+**Solution**:
+
+- Create copy of mutable parameters: `list(param) if param else []`
+- Never modify parameters passed to functions
+- Ensures caller's data remains unchanged
+
+**Example Fix**: `src/converter/html_converter.py` line 254
+
+### 6. DOM Manipulation Order
+
+**Issue**: Extracting element from DOM before storing parent reference.
+
+**Solution**:
+
+- Store parent reference before any DOM modifications
+- `original_parent = img.parent` before `img.extract()`
+- Use stored reference for reinsertion
+
+**Example Fix**: `src/converter/html_converter.py` lines 140-154
+
+### 7. Hierarchical Structure Tracking
+
+**Issue**: Incorrect parent-child relationships in heading hierarchy.
+
+**Solution**:
+
+- Stack-based tracking of most recent heading at each level
+- Search backwards for closest parent at higher level
+- Clear lower levels when moving up hierarchy
+
+**Example Fix**: `src/app/panels/process_panel.py` lines 337-382
+
+### 8. Safe Dictionary Access
+
+**Issue**: Direct dictionary key access risking KeyError.
+
+**Solution**:
+
+- Use `setdefault()` to ensure keys exist
+- Create safe references at method start
+- `config.setdefault("section", {})` returns existing or creates new
+
+**Example Fix**: `src/project/project.py` lines 161-163
+
+### 9. Portable Path Construction
+
+**Issue**: Hardcoded paths reduce portability across environments.
+
+**Solution**:
+
+- Use `Path(__file__).parent` for script-relative paths
+- Build paths dynamically from known locations
+- Ensure directories exist before use
+
+**Example Fix**: `src/test_pandoc.py` lines 105, 113-114
+
+### 10. Test Mock Scoping
+
+**Issue**: Global subprocess mocking affected all tests.
+
+**Solution**:
+
+- Mock at specific module: `patch("src.module.subprocess.run")`
+- Not globally: `patch("subprocess.run")`
+- Prevents test interference
+
+**Example Fix**: `tests/test_pandoc_converter.py` lines 20, 83, 96, 118
+
+### 11. Duplicate Prevention in Collections
+
+**Issue**: Using list with extend() could create duplicates.
+
+**Solution**:
+
+- Use `set` with `update()` for automatic deduplication
+- Convert to sorted list only when returning
+- Cleaner and more efficient
+
+**Example Fix**: `src/project/project.py` lines 199-232
+
+## Recommended Rule Additions
+
+These patterns should be added to our coding standards:
+
+1. **Exception Specificity Rule**: Always catch the most specific exception possible
+2. **Security by Default Rule**: Destructive operations require explicit confirmation
+3. **Path Validation Rule**: Always validate user-provided and extracted paths
+4. **Mutation Prevention Rule**: Never modify function parameters directly
+5. **Collision Handling Rule**: Always check for and handle file collisions gracefully
+6. **Mock Scoping Rule**: Mock at the narrowest scope possible in tests
+7. **Directory Safety Rule**: Always ensure directories exist before file operations
+
+## Impact
+
+These improvements enhance:
+
+- **Security**: Prevented path traversal, added confirmation requirements
+- **Reliability**: Proper exception handling reveals real bugs
+- **Data Safety**: Backup by default, collision prevention
+- **Maintainability**: Clearer error messages, predictable behavior
+- **Debugging**: Programming errors now surface immediately
+
+## Fallback Methods
+
+**Priority**: High
+**Scope**: Global
+
+- Do not create fallback methods if a library isn't available, or a feature doesn't work.
+- Generate an exception and a log entry rather than silently falling back to alternate methods or mocks.
+
+## Code Organization
+
+**Priority**: High
+**Scope**: Global
+
+- Keep files under 300 lines
+- Use meaningful file and directory names
+- Implement proper module structure
+- Follow Python package conventions
+- Maintain clear separation of concerns
+- When you create a new class, place it in a separate file.
+- Always consider the separation of concerns and the need for separate classes and files.
+
+## Editing Rules
+
+**Priority**: High
+**Scope**: Global
+
+- Keep all edits concise and to-the-point of the chat.
+
+## Refactoring Rules
+
+**Priority**: High
+**Scope**: Global
+
+- Take care when refactoring and create a detailed plan.
+- Do not remove imports from a file without first testing the file. Its better to comment-out imports and save import cleanup for a later time.
+- If you move a class or method to another file or class, take a thorough look to see where it is referenced and repair imports and function calls
+- Its better to mark a function as @deprecated than to remove it from the codebase. Save it for a later cleanup. Do not remove functions unless it is restored elsewhere and the code is repaired.
+
+## Code Quality
+
+**Priority**: High
+**Scope**: Global
+
+- Prefer simple solutions over complex ones
+- Avoid code duplication
+- Write self-documenting code
+- Use type hints consistently
+- Follow PEP 8 style guide
+
+## Error Handling
+
+**Priority**: High
+**Scope**: Global
+
+- Implement proper exception handling
+- Log errors with context
+- Validate inputs and outputs
+- Handle edge cases gracefully
+- Maintain error state consistency
+
+## Python Config File Conventions
+
+**Priority**: High
+**Scope**: Global
+
+- use built-in toml file capabilities for reading toml files
+- use the tomli-w library for writing toml files.
+- use toml files for configuration settings and not JSON files
+
+## Testing
+
+**Priority**: High
+**Scope**: Global
+
+- Write unit tests for all new code
+- Use appropriate test frameworks
+- Mock external dependencies
+- Test edge cases
+- Maintain test coverage
+
+## Performance
+
+**Priority**: High
+**Scope**: Global
+
+- Optimize data structures
+- Use appropriate caching strategies
+- Profile performance-critical code
+- Monitor memory usage
+- Implement efficient algorithms
+- Use async operations and progress dialogs for any long operations
+
+## Security
+
+**Priority**: High
+**Scope**: Global
+
+- Validate all inputs
+- Sanitize outputs
+- Handle sensitive data securely
+- Follow security best practices
+- Regular security audits
+
+## Environment Management
+
+**Priority**: High
+**Scope**: Global
+
+- Use virtual environments
+- Manage dependencies properly
+- Document environment setup
+- Version control requirements
+- Handle environment variables securely
+
+## Rules for Python Projects
+
+**Priority**: High
+**Scope**: Global
+
+- Always prefer simple solutions.
+- Avoid code duplication whenever possible, which means checking for other areas of the codebase that might already have similar code and functionality.
+- Write code that takes into account different environments: dev, test, and prod.
+- You are careful to only make changes that are requested or you are confident are well understood and related to the change being requested.
+- When fixing an issue or bug, do not introduce a new pattern or technology without first exhausting all options for the existing implementation. And if you finally do this, make sure to remove the old implementation afterwards so we don't have duplicate logic.
+- Keep the codebase clean and organized
+- Mocking data is only needed for tests. Never mock data for dev or prod.
+- If the import of a dependency fails, generate an exception and log the error.
+- Never add stubbing or fake data patterns to code that affects the dev or prod environments.
+- Never overwrite my .env file without first asking
+- Instead of using function aliases for backward compatibility, it's better practice to update any function calls directly.
+
+## Deprecation and Code Removal Policy
+
+**Priority**: High
+**Scope**: Global
+
+- Before flagging any class, function, or module as deprecated, or before removing code, always perform a reference check (using code search or 'Find all references') to ensure it is not in use anywhere in the codebase.
+- Only mark code as deprecated if no active references are found, or if you are intentionally beginning a deprecation process for code that will be removed in the future.
+- When deprecating code, use the @deprecated decorator (from the Deprecated package), add a clear docstring warning, and emit a runtime warning if appropriate.
+- Do not delete deprecated code immediately; retain it for at least one release cycle or until you have confirmed it is unused and safe to remove.
+- Document all deprecations and removals in the CHANGELOG.
+
+# Other Rules
+
+- You can @ files here

@@ -1,0 +1,18 @@
+---
+description: Using UV for Setup of VENV and Build
+alwaysApply: false
+---
+
+# Using UV for Setup of VENV and Build
+
+## Setup VENV and Build
+
+**Priority**: High
+**Scope**: Global
+
+- Use UV for virtual environment and dependency setup into a .venv folder
+- Use UV for building applications.
+- Remove Poetry files, features, and settings if any.
+
+- Refer to the UV documentation and ensure that best practices are followed.
+- See https://docs.astral.sh/uv/#projects 
