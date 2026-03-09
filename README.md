@@ -41,9 +41,25 @@ pip install /path/to/thebrain-mcp
 pip install thebrain-mcp
 ```
 
+### MCP connector (run as a server / add to Spock)
+
+The **runnable MCP connector** lives in `python/`. Install it so you get the `thebrain-mcp` command (e.g. for Spock or any MCP client):
+
+```bash
+# From repo root — install the connector package
+pip install -e ./python
+# or with UV:
+uv pip install -e ./python
+
+# Run the connector (stdio MCP server)
+thebrain-mcp
+```
+
+Version is driven by the root [VERSION](VERSION) file (currently 0.2.0). See [python/README_Python.md](python/README_Python.md) for connector setup and [INSTALL.md](INSTALL.md) for adding to Spock.
+
 ### Add to another project (e.g. Spock)
 
-To use this library from another repo (e.g. a connector host):
+To use the **library** from another repo (e.g. a connector host):
 
 1. **Clone this repo** (or add as submodule):
    ```bash
@@ -71,6 +87,8 @@ To use this library from another repo (e.g. a connector host):
    ```python
    from thebrain_mcp import TheBrainAPIClient, BrainCache, BrainSyncEngine, MetricsCollector
    ```
+
+To **run the MCP connector** (e.g. for Spock), install the connector package instead: `pip install -e /path/to/thebrain-mcp/python`. That provides the `thebrain-mcp` executable.
 
 See [INSTALL.md](INSTALL.md) for step-by-step UV setup, editable install, and adding this library to another project (e.g. a desktop connector app).
 
@@ -138,8 +156,9 @@ Get an API key from [TheBrain app](https://app.thebrain.com/api-keys).
 
 ## What’s in this repo
 
-- **Library only** — no MCP server. A host app (desktop connector, CLI, or server) can depend on this package and expose tools/resources.
-- **Node.js** — removed; use the Python package.
+- **`src/thebrain_mcp/`** — Python **library** (this package). Install with `pip install -e .` from repo root. Version from [VERSION](VERSION).
+- **`python/`** — **Runnable MCP connector** (stdio server). Install with `pip install -e ./python` to get the `thebrain-mcp` command for Spock or other MCP clients. Same version from `VERSION`.
+- **`mcp-js/`** — Legacy Node.js MCP server; preserved for reference. Use the Python connector for new use.
 - **TheBrain API** — https://api.bra.in
 
 ## License

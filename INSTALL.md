@@ -1,5 +1,14 @@
 # Installation and integration
 
+**Version:** The repo version is in the root [VERSION](VERSION) file (e.g. `0.2.0`). Both the root library and the `python/` connector use it.
+
+## Two ways to use this repo
+
+| What you want | Install | Result |
+|---------------|---------|--------|
+| **Library** (client, cache, sync, graph) in your own code | `pip install -e .` from repo root | `thebrain_mcp` package to import |
+| **MCP connector** (run as server for Spock / MCP clients) | `pip install -e ./python` from repo root | `thebrain-mcp` command in PATH |
+
 ## UV and editable install (-e)
 
 ### Why editable install?
@@ -42,9 +51,20 @@ pip install -e /path/to/thebrain-mcp
 
 ## Adding thebrain-mcp to Spock
 
-Spock is a desktop app that can load a “connector” which uses this library to talk to TheBrain. The connector lives in the Spock repo (or its `ext/` submodule), not in this repo.
+Spock is a desktop app that can load a connector that uses MCP to talk to TheBrain. You can either run the MCP connector from this repo (Option A) or embed the library in your own connector (Option B).
 
-### 1. Install thebrain-mcp in Spock’s environment (editable)
+### Option A: Run the MCP connector (pip-install the server)
+
+Install the connector package so the `thebrain-mcp` executable is available; point Spock at it as the MCP server:
+
+```bash
+uv pip install -e /path/to/thebrain-mcp/python
+thebrain-mcp
+```
+
+Configure Spock to use `thebrain-mcp` as the MCP server command.
+
+### Option B: Use the library in your own connector
 
 From your host app (e.g. Spock) or connector repo:
 
@@ -58,7 +78,7 @@ uv pip install -e /path/to/thebrain-mcp
 
 Replace `/path/to/thebrain-mcp` with the real path (e.g. `G:\GitHub\thebrain-mcp` or `~/GitHub/thebrain-mcp`).
 
-### 2. Declare the dependency (optional)
+### 2. Declare the dependency (optional, for library use)
 
 In the host app’s project (e.g. `pyproject.toml` in the repo that contains the connector), you can add:
 
@@ -90,6 +110,8 @@ No references to this repo’s name or to any specific host (e.g. Spock) are req
 
 | Goal | Command |
 |------|--------|
-| Work on thebrain-mcp and run tests | `cd thebrain-mcp && uv sync --extra dev && uv run pytest tests/` |
-| Use thebrain-mcp from another project (editable) | `uv pip install -e /path/to/thebrain-mcp` |
-| Use thebrain-mcp from Spock (editable) | From Spock repo: `uv pip install -e /path/to/thebrain-mcp` |
+| Version number | See root [VERSION](VERSION) (e.g. 0.2.0) |
+| Work on library and run tests | `cd thebrain-mcp && uv sync --extra dev && uv run pytest tests/` |
+| Install MCP connector (get `thebrain-mcp` command) | `pip install -e ./python` or `uv pip install -e /path/to/thebrain-mcp/python` |
+| Use library from another project (editable) | `uv pip install -e /path/to/thebrain-mcp` |
+| Use connector or library from Spock | `uv pip install -e /path/to/thebrain-mcp/python` (connector) or `.../thebrain-mcp` (library) |

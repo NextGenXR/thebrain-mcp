@@ -642,7 +642,6 @@ wheels = [
 
 [[package]]
 name = "thebrain-mcp"
-version = "0.2.0"
 source = { editable = "." }
 dependencies = [
     { name = "aiofiles" },
@@ -680,7 +679,7 @@ requires-dist = [
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.1.0" },
     { name = "tenacity", specifier = ">=8.0.0" },
 ]
-provides-extras = ["visualization", "dev"]
+provides-extras = ["dev", "visualization"]
 
 [[package]]
 name = "traitlets"
