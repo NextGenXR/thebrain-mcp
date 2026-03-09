@@ -17,14 +17,10 @@ export class TheBrainAPI {
   async request(method, endpoint, options = {}) {
     const url = `${this.baseUrl}${endpoint}`;
     
-    // Properly merge headers to avoid overwriting Authorization
     const fetchOptions = {
       method,
+      headers: { ...this.headers },
       ...options,
-      headers: {
-        ...this.headers,
-        ...options.headers,  // Merge custom headers AFTER default headers
-      },
     };
 
     // Add Content-Type for JSON payloads
@@ -117,9 +113,10 @@ export class TheBrainAPI {
     }
 
     return this.request('PATCH', `/thoughts/${brainId}/${thoughtId}`, {
-      body: {
-        patchDocument: patches,
+      headers: {
+        'Content-Type': 'application/json-patch+json',
       },
+      body: patches,
     });
   }
 
@@ -175,9 +172,10 @@ export class TheBrainAPI {
     }
 
     return this.request('PATCH', `/links/${brainId}/${linkId}`, {
-      body: {
-        patchDocument: patches,
+      headers: {
+        'Content-Type': 'application/json-patch+json',
       },
+      body: patches,
     });
   }
 

@@ -1,0 +1,143 @@
+---
+description: Rules for Using NetworkX Library
+alwaysApply: false
+---
+
+# Rules for Using NetworkX
+
+## NetworkX Core Purpose
+
+**Priority**: High
+**Scope**: Core Graph Operations
+
+- **Primary Use**: NetworkX is the core library for modeling and analyzing hierarchical and graph structures (e.g. thoughts and links)
+- **Graph Type**: Use `nx.DiGraph()` for directed graphs to represent parent-child relationships
+- **Node Data**: Store full issue data in node attributes using `G.add_node(node_id, data=node_dict)`
+- **Edge Creation**: Edges represent parent-child relationships, created with `G.add_edge(parent_id, child_id)`
+
+## Graph Construction Patterns
+
+**Priority**: Critical
+**Scope**: Data Model
+
+```python
+# Standard pattern for building graphs from hierarchical data
+G = nx.DiGraph()
+node_map = {}
+
+# Add nodes with their data
+for node in filtered_nodes:
+    node_id = node.get('id')
+    if node_id is not None:
+        G.add_node(node_id, data=node)
+        node_map[node_id] = node
+
+# Add edges based on parent relationships
+for node in filtered_nodes:
+    node_id = node.get('id')
+    parent_id = node.get('parent_id')
+    if node_id is not None and parent_id is not None and parent_id in node_map:
+        G.add_edge(parent_id, node_id)
+```
+
+## Layout Algorithms
+
+**Priority**: High
+**Scope**: Graph Visualization
+
+### Primary Layout Methods
+
+1. **GraphViz Dot Layout (Preferred for Hierarchical Data)**
+
+   ```python
+   # Best for parent-child hierarchies
+   pos = nx.drawing.nx_pydot.graphviz_layout(G, prog='dot')
+   # Flip Y-axis for proper orientation in Qt
+   for node_id in pos:
+       pos[node_id] = (pos[node_id][0], -pos[node_id][1])
+   ```
+
+2. **Force-Directed Layout (Spring Layout)**
+
+   ```python
+   # Good for general graphs with customized spacing
+   pos = nx.spring_layout(
+       G,
+       k=1.5 / math.sqrt(len(G.nodes)),  # Optimal distance
+       iterations=50,  # Balance quality vs performance
+       seed=42  # Reproducible layouts
+   )
+   ```
+
+3. **Circular Layout (Fallback)**
+
+   ```python
+   # Simple fallback when other layouts fail
+   pos = nx.circular_layout(G)
+   ```
+
+### Layout Selection Strategy
+
+- **Always provide fallback options** in case primary layouts fail
+- **Catch exceptions** and fall back to simpler layouts
+- **Log warnings** when falling back to help debug issues
+
+## GraphViz Integration
+
+**Priority**: High
+**Scope**: Advanced Layouts
+
+### GraphViz Configuration
+
+- **Windows Path Detection**: GraphViz may be installed in different locations
+- **Direct Subprocess Calls**: When nx_pydot fails, use direct GraphViz calls with JSON output
+- **Orientation Options**: TB (Top-Bottom), LR (Left-Right), BT (Bottom-Top), RL (Right-Left)
+
+## Performance Optimization
+
+**Priority**: High
+**Scope**: Large Graphs
+
+- **Small Graphs (<100 nodes)**: All layouts work well
+- **Medium Graphs (100-1000 nodes)**: Prefer GraphViz dot, limit spring layout iterations
+- **Large Graphs (>1000 nodes)**: Use GraphViz dot with simplified options, cache layout calculations
+
+## Integration with GUI frameworks (e.g. Qt/PySide6)
+
+**Priority**: Critical
+**Scope**: UI Integration
+
+- Configure matplotlib backend: `matplotlib.use('Qt5Agg')`
+- Use NavigationToolbar for zoom/pan functionality
+- Preserve view state between redraws (xlim/ylim)
+- Connect matplotlib pick events to Qt signals for node selection
+
+## Error Handling Best Practices
+
+**Priority**: High
+**Scope**: Robustness
+
+- Handle empty graphs gracefully
+- Check for missing dependencies (pydot)
+- Validate node/edge data before adding
+- Always provide fallback layouts
+
+## Thread Safety
+
+**Priority**: High
+**Scope**: Async Operations
+
+- NetworkX graphs are **not thread-safe** by default
+- Use locks when modifying graphs from multiple threads
+- Build graphs in background threads, pass to UI thread
+
+## Best Practices Summary
+
+1. **Always use DiGraph** for hierarchical data
+2. **Store full node data** in node attributes
+3. **Provide multiple layout fallbacks**
+4. **Handle empty graphs gracefully**
+5. **Cache expensive calculations**
+6. **Log all fallback scenarios**
+7. **Validate data before graph operations**
+8. **Test with various graph sizes**

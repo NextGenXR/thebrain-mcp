@@ -39,3 +39,7 @@ build/
 # Temporary files
 tmp/
 temp/
+.mypy*
+__pycache__
+
+.venv/

@@ -1,0 +1,49 @@
+---
+description: Enforces SOLID programming principles for maintainable and scalable code.
+globs:
+  - "**/*.py"
+  - "**/*.cpp"
+  - "**/*.cs"
+alwaysApply: false
+priority: 10
+---
+
+# SOLID Principles Rule Set
+
+## Core Principles
+
+- **Single Responsibility Principle (SRP):**
+  - Each module/class should have only one reason to change.
+  - Avoid "God objects" and classes/functions with multiple roles.
+
+- **Open/Closed Principle (OCP):**
+  - Software entities should be open for extension and closed for modification.
+  - Add new behavior using inheritance, composition, or other extensibility patterns (not edits to existing code).
+
+- **Liskov Substitution Principle (LSP):**
+  - Subtypes must be replaceable for their base types without altering the correctness.
+  - Avoid violating contracts in derived classes or introducing unexpected behavior.
+
+- **Interface Segregation Principle (ISP):**
+  - Prefer small, client-specific interfaces over large, general-purpose ones.
+  - Do not force implementations to depend on unused methods.
+
+- **Dependency Inversion Principle (DIP):**
+  - Depend on abstractions, not concretions.
+  - High-level modules must not depend on low-level modules—both should depend on interfaces or abstract types.
+
+## Code Standards
+
+- Break classes and modules whenever one is responsible for more than one distinct feature.
+- Use extensible design patterns (e.g., strategy, decorator) for OCP.
+- Subclass carefully; never override behavior in ways that break expected contracts (especially for LSP).
+- Define interfaces/protocols for each narrow concern; never aggregate disparate requirements.
+- Inject dependencies through constructors or service locators; never hardcode dependencies.
+
+## Validation Rules
+
+- Flag classes with more than one distinct area of responsibility.
+- Highlight code changes that modify the core of widely-used classes instead of extending them.
+- Warn if a derived class narrows preconditions or broadens postconditions of base class methods.
+- Flag interfaces with too many methods or illogical groupings.
+- Identify violations where concrete implementations are directly new-ed/constructed in several places.

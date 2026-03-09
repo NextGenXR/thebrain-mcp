@@ -192,7 +192,7 @@ function getDirectionInfo(direction) {
   // Build description
   const parts = [];
   if (info.isDirected) {
-    parts.push(info.isBackward ? 'B→A' : 'A→B');
+    parts.push(info.isBackward ? 'BΓåÆA' : 'AΓåÆB');
   } else {
     parts.push('Undirected');
   }
@@ -220,7 +220,7 @@ function getMeaningName(meaning) {
 
 // Example usage patterns for direction:
 // - Undirected link: direction = 0
-// - Directed A→B: direction = 1
-// - Directed B→A: direction = 3 (1 + 2)
-// - One-way A→B: direction = 5 (1 + 4)
-// - One-way B→A: direction = 7 (1 + 2 + 4)
+// - Directed AΓåÆB: direction = 1
+// - Directed BΓåÆA: direction = 3 (1 + 2)
+// - One-way AΓåÆB: direction = 5 (1 + 4)
+// - One-way BΓåÆA: direction = 7 (1 + 2 + 4)

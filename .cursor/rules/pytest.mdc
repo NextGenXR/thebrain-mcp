@@ -1,0 +1,113 @@
+---
+description: Testing standards using pytest
+globs:
+- 'test_*.py'
+- '*_test.py'
+- '**/tests/**'
+- 'conftest.py'
+alwaysApply: false
+---
+# Testing Standards (pytest)
+
+pytest is the **only** testing framework for this project. Do not use `unittest.TestCase` subclasses -- write plain functions with `assert` statements.
+
+## Project Test Configuration
+
+Configured in `pyproject.toml [tool.pytest.ini_options]`:
+- Test paths: `tests/`
+- File patterns: `test_*.py`, `*_test.py`
+- Markers: `slow`, `integration`, `gui`
+- Plugins: `pytest-asyncio` (async tests), `pytest-qt` (PySide6 GUI tests)
+
+## Test Organization
+
+- Mirror the `src/` module structure under `tests/`.
+- One test file per source module (e.g., `tests/test_sync_engine.py` for `src/core/sync_engine.py`).
+- Group related tests into classes when they share fixtures, but prefer plain functions otherwise.
+- Place shared fixtures in `conftest.py` at the appropriate directory level.
+
+## Writing Tests
+
+### Arrange-Act-Assert
+
+Structure every test with clear AAA sections:
+
+```python
+def test_storage_config_validates_required_params():
+    config = StorageConfig(
+        storage_type=StorageType.S3,
+        name="test",
+        parameters={"bucket": "my-bucket"},
+    )
+    errors = config.get_validation_errors()
+    assert "region" in errors[0]
+```
+
+### Fixtures
+
+- Use `@pytest.fixture` for reusable setup. Prefer fixture factories for parameterized data.
+- Use the narrowest scope possible: `function` (default) for isolation, `module` or `session` only for expensive resources.
+- Always clean up resources in fixtures using `yield` or `request.addfinalizer`.
+
+### Parametrize
+
+Use `@pytest.mark.parametrize` to cover multiple inputs without duplicating test bodies:
+
+```python
+@pytest.mark.parametrize("storage_type", [StorageType.LOCAL, StorageType.S3, StorageType.OMNIVERSE])
+def test_factory_creates_backend(storage_type, valid_config):
+    ...
+```
+
+### Async Tests
+
+Use `pytest-asyncio` for async code. Mark async tests explicitly:
+
+```python
+import pytest
+
+@pytest.mark.asyncio
+async def test_async_file_listing(storage_backend):
+    files = await storage_backend.list_files("/")
+    assert isinstance(files, list)
+```
+
+### GUI Tests
+
+Use `pytest-qt` for PySide6 tests. Access widgets through the `qtbot` fixture:
+
+```python
+def test_main_window_opens(qtbot):
+    window = MainWindow()
+    qtbot.addWidget(window)
+    assert window.isVisible()
+```
+
+Mark GUI tests with `@pytest.mark.gui` so they can be excluded in headless CI.
+
+## Mocking
+
+- Use `unittest.mock.patch` or `pytest-mock`'s `mocker` fixture.
+- Mock at the **narrowest scope**: `patch("src.storage.storage_factory.WRAPPStorage")` not `patch("storage.wrapp_storage.WRAPPStorage")`.
+- Use `autospec=True` to ensure mocks match the real API.
+- Never mock data in dev or prod -- mocking is for tests only.
+
+## Assertions
+
+- Use plain `assert` statements with descriptive failure messages when needed.
+- Use `pytest.raises` for exception testing, `pytest.approx` for floats.
+- One primary assertion per test to make failure diagnosis clear.
+
+## Performance
+
+- Profile slow tests with `--durations=10`.
+- Use `pytest-xdist` (`-n auto`) for parallel execution.
+- Expensive fixtures (database connections, network clients) should use `session` scope with proper cleanup.
+
+## What Not to Do
+
+- Do not subclass `unittest.TestCase` -- use plain pytest functions.
+- Do not use `setUp` / `tearDown` -- use fixtures instead.
+- Do not skip tests without a `reason` string.
+- Do not test implementation details -- test behavior.
+- Do not rely on test execution order.

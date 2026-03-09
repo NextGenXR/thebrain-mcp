@@ -1,256 +1,147 @@
-# TheBrain MCP Server
+# TheBrain MCP
 
-An MCP (Model Context Protocol) server that enables AI assistants to interact with TheBrain's knowledge management system. This server provides comprehensive access to TheBrain's API, focusing on natural language interaction with TheBrain's powerful knowledge management capabilities.
+A **Python client library** for the TheBrain API with local SQLite caching and incremental sync. Use it from any Python project or from a host app (e.g. a desktop connector) that exposes TheBrain via MCP or similar.
 
-## 🔧 What's an MCP Server?
+## Install
 
-**MCP (Model Context Protocol)** is a standard that lets AI assistants like Claude connect to external tools and services. Think of it as a translator between natural language and software APIs.
+### With UV (recommended)
 
-### How It Works:
-```
-You → Claude → MCP Server → TheBrain API → Your Brain
-```
+[UV](https://docs.astral.sh/uv/) is a fast Python package manager. Use it for installs and editable mode.
 
-1. **You say**: "Create a project with three phases"
-2. **Claude understands** what you want to accomplish  
-3. **MCP Server translates** this into specific TheBrain API calls
-4. **TheBrain API** creates the thoughts and connections
-5. **Your Brain** updates with the new structure
+**Editable install (development)** — changes in the repo are picked up without reinstalling:
 
-The magic is that **you don't need to know any technical details** - just describe what you want in plain English!
-
-## 🚀 What Actually Works
-
-### ✅ **Core Functionality (Working)**
-- **Content Management**: Create, update, delete thoughts and notes
-- **File Attachments**: Upload images, PDFs, documents to thoughts
-- **Web References**: URL attachments with auto-title extraction  
-- **Rich Notes**: Full Markdown support with embedded content
-- **Relationship Mapping**: Connect thoughts with meaningful relationships
-- **Search**: Full-text search across thoughts, notes, and attachments
-- **Brain Management**: Switch between multiple brains seamlessly
-- **Natural Language Interface**: Describe what you want, Claude handles the details
-
-## ❌ Current Issues & Limitations
-
-### 🚨 **Major Visual Styling Problems**
-**The biggest limitation**: Visual properties don't actually apply despite API success responses.
-
-- **❌ Thought colors**: API accepts colors but they don't appear in TheBrain
-- **❌ Link colors**: Similar issue - accepted but not applied  
-- **❌ Link thickness**: API reports success but thickness doesn't change
-- **❌ Visual formatting**: All visual styling features are currently non-functional
-
-### 🐛 **Other Known Issues**
-- **Intermittent connection problems**: "Field required" errors after successful operations
-- **Long notes limitations**: Issues with very long markdown content (keep under 10k characters)
-- **File path sensitivity**: Requires absolute file paths; relative paths can fail
-- **Connection timing**: MCP initialization race condition causing sporadic failures
-- **Memory constraints**: Large file attachments can cause timeouts
-- **Search limitations**: Complex queries sometimes return incomplete results
-
-### 📋 **API Dependencies & Constraints**
-- **Single-user operations**: No real-time collaboration features
-- **No bulk operations**: Can't import/export large datasets efficiently  
-- **API connectivity required**: No offline mode available
-- **TheBrain API limitations**: Bound by existing API capabilities
-- **Authentication required**: Must have valid TheBrain API key
-
-## 🛠 **Current Workarounds**
-
-Until visual styling is fixed, use these alternatives:
-- **Emojis for distinction**: 🟢🟡🔴⚪🔵 instead of colors
-- **Descriptive names**: "🔴 Urgent Task" instead of colored thoughts
-- **Rich markdown notes**: Use formatting within notes for visual organization
-- **Hierarchical structure**: Rely on parent/child relationships for organization
-
-## Installation
-
-1. Clone this repository:
 ```bash
-git clone https://github.com/redmorestudio/thebrain-mcp.git
-cd thebrain-mcp
+# From the repo root
+cd /path/to/thebrain-mcp
+uv pip install -e .
+
+# Or from another directory (use absolute path)
+uv pip install -e /path/to/thebrain-mcp
 ```
 
-2. Install dependencies:
+**Normal install** — fixed copy:
+
 ```bash
-npm install
+uv pip install -e /path/to/thebrain-mcp   # still editable
+# or
+uv pip install .                          # from inside repo
+# or when published:
+uv pip install thebrain-mcp
 ```
 
-3. Create a `.env` file with your API key:
+### With pip
+
+```bash
+# Editable (development)
+pip install -e /path/to/thebrain-mcp
+
+# Normal
+pip install /path/to/thebrain-mcp
+# or
+pip install thebrain-mcp
+```
+
+### Add to another project (e.g. Spock)
+
+To use this library from another repo (e.g. a connector host):
+
+1. **Clone this repo** (or add as submodule):
+   ```bash
+   git clone https://github.com/your-org/thebrain-mcp.git
+   ```
+
+2. **Editable install with UV** (recommended for development):
+   ```bash
+   cd /path/to/your-project
+   uv pip install -e /path/to/thebrain-mcp
+   ```
+   Your app’s environment will see `thebrain_mcp`; edits in `thebrain-mcp` apply immediately.
+
+3. **In your project’s dependency file** (e.g. `pyproject.toml`), you can reference it as:
+   ```toml
+   [project.optional-dependencies]
+   thebrain = ["thebrain-mcp>=0.2.0"]
+   ```
+   For local editable use, install that extra and then override with:
+   ```bash
+   uv pip install -e /path/to/thebrain-mcp
+   ```
+
+4. **Use in code**:
+   ```python
+   from thebrain_mcp import TheBrainAPIClient, BrainCache, BrainSyncEngine, MetricsCollector
+   ```
+
+See [INSTALL.md](INSTALL.md) for step-by-step UV setup, editable install, and adding this library to another project (e.g. a desktop connector app).
+
+## Quick use
+
+```python
+from thebrain_mcp import TheBrainAPIClient, BrainCache, BrainSyncEngine, MetricsCollector
+
+client = TheBrainAPIClient(api_key="...")
+cache = BrainCache("/path/to/cache.db")
+await cache.open()
+engine = BrainSyncEngine(client=client, cache=cache, metrics=MetricsCollector())
+await engine.run_full_sync(brain_id)
+```
+
+## Recommended MCP tool surface
+
+When exposing TheBrain via MCP, prefer **outcome-oriented tools** instead of many CRUD wrappers:
+
+| Tool | Purpose |
+|------|---------|
+| `explore_thought` | Thought + graph + notes + attachments in one call |
+| `search_brain` | Hybrid local FTS + API search |
+| `create_thought` | Create with optional links, notes, type, tags |
+| `update_thought` | Update properties, notes, links |
+| `connect_thoughts` | Create/update link between two thoughts |
+| `manage_notes` | Get, create, update, append notes |
+| `manage_attachments` | List, add, get attachments |
+| `analyze_graph` | Stats, centrality, communities, paths, gaps |
+| `sync_brain` | Trigger sync, get status and metrics |
+| `browse_brain` | List brains, get/set active, types, tags |
+| `get_modifications` | Recent changes with filtering |
+| `delete_entities` | Delete thought/link/attachment (with confirmation) |
+
+## MCP resources (read-only)
+
+- `brain://stats` — brain statistics  
+- `brain://types` — thought types  
+- `brain://tags` — tags  
+- `brain://pins` — pinned thoughts  
+- `brain://sync-status` — last sync time, cache stats, metrics  
+
+## MCP prompts (templates)
+
+- `summarize-neighborhood` — Summarize the knowledge neighborhood of thought X  
+- `find-path` — Find and explain the path between X and Y  
+- `analyze-gaps` — Identify knowledge gaps in brain X  
+- `compare-thoughts` — Compare thoughts X and Y  
+- `daily-digest` — Summarize today's modifications  
+
+---
+
+## API key and env
+
+Create a `.env` (or set env vars) with:
+
 ```bash
 THEBRAIN_API_KEY=your_api_key_here
 THEBRAIN_DEFAULT_BRAIN_ID=optional_default_brain_id
 ```
 
-## Configuration
-
-### For Claude Desktop
-
-Add to your Claude Desktop configuration:
-
-```json
-{
-  "mcpServers": {
-    "thebrain": {
-      "command": "node",
-      "args": ["/absolute/path/to/thebrain-mcp/index.js"],
-      "env": {
-        "THEBRAIN_API_KEY": "your_api_key_here"
-      }
-    }
-  }
-}
-```
-
-**⚠️ Important**: Use absolute file paths in the configuration and for file attachments.
-
-## Debugging & Troubleshooting
-
-### Common Issues & Solutions
-
-**"Field required" errors**:
-- Restart Claude Desktop
-- Verify `.env` file has correct API key
-- Always set active brain first: "Set my active brain to [name]"
-
-**File upload failures**:
-- Use absolute file paths: `/Users/username/Documents/file.pdf`
-- Check file permissions and existence
-- Keep file sizes reasonable (< 50MB)
-
-**Long note problems**:
-- Keep notes under 10,000 characters
-- Break large content into multiple thoughts
-- Use attachments for lengthy documents
-
-**Debug mode**:
-```bash
-VERBOSE=true node index.js
-```
-
-## Available Tools (25+ Functions)
-
-### Brain Management
-- `list_brains` - List all available brains
-- `get_brain` - Get brain details
-- `set_active_brain` - Set the active brain for operations
-- `get_brain_stats` - Get comprehensive brain statistics
-
-### Thought Operations
-- `create_thought` - Create thoughts (visual properties don't work)
-- `get_thought` - Retrieve thought details
-- `update_thought` - Update thought properties
-- `delete_thought` - Delete a thought
-- `search_thoughts` - Search across the brain
-- `get_thought_graph` - Get thought with all connections
-- `get_types` - List all thought types
-- `get_tags` - List all tags
-
-### Link Operations
-- `create_link` - Create links between thoughts (styling doesn't work)
-- `update_link` - Modify link properties
-- `get_link` - Get link details
-- `delete_link` - Remove a link
-
-### Attachment Operations
-- `add_file_attachment` - Attach files/images to thoughts ✅
-- `add_url_attachment` - Attach web URLs ✅
-- `get_attachment` - Get attachment metadata
-- `get_attachment_content` - Download attachment content
-- `delete_attachment` - Remove attachments
-- `list_attachments` - List thought attachments
-
-### Note Operations
-- `get_note` - Retrieve notes in markdown/html/text ✅
-- `create_or_update_note` - Create or update notes ✅
-- `append_to_note` - Append content to existing notes ✅
-
-### Advanced Features
-- `get_modifications` - View brain modification history
-
-## Usage Examples (What Actually Works)
-
-### Project Organization
-```
-You: "Create a project called 'Kitchen Renovation'"
-Claude: Creates central project thought
-
-You: "Add phases for planning, demolition, and installation"  
-Claude: Creates connected sub-thoughts for each phase
-
-You: "Attach my contractor quotes to the planning phase"
-Claude: Uploads files to the planning thought
-
-You: "Add a detailed note about the timeline to the project"
-Claude: Creates rich markdown note with your timeline
-```
-
-### Research & Knowledge Management
-```
-You: "Create a research topic about sustainable energy"
-Claude: Sets up main research thought
-
-You: "Add sub-topics for solar, wind, and hydro power"
-Claude: Creates organized thought hierarchy
-
-You: "Attach relevant papers and web articles"
-Claude: Adds file and URL attachments
-
-You: "Search for everything related to efficiency"
-Claude: Finds all relevant thoughts and content
-```
-
-## 🔮 Roadmap & Future Development
-
-### **Immediate Priorities (v1.2.0)**
-- **🚨 Fix visual styling**: Investigate why colors/thickness don't apply
-- **🔧 Connection stability**: Resolve MCP timing/race condition issues  
-- **📝 Long notes support**: Better handling of extensive markdown content
-- **🛡️ Error handling**: More graceful failures and recovery
-
-### **Future Enhancements**
-- **Bulk operations** for large-scale organization
-- **Enhanced templates** for common workflows
-- **Performance optimizations** for complex brains  
-- **Offline capabilities** and caching
-
-## Technical Architecture
-
-### What Makes This Server Special
-- **Natural language interface**: No technical knowledge required
-- **Complete API coverage**: 25+ tools spanning all TheBrain operations
-- **Robust error handling**: Graceful failures and clear error messages
-- **Modular design**: Clean, maintainable code architecture
-- **Production ready**: Proper logging, testing, and documentation
-
-### Current Status
-- **Version**: 1.1.0 (June 2025)
-- **Core functionality**: ✅ Complete and working
-- **Visual properties**: ❌ Major issues need investigation
-- **Stability**: 🟡 Generally stable with intermittent connection issues
-
-## Contributing
-
-Contributions are welcome! Areas where help is especially needed:
-
-- **Visual styling investigation**: Why don't colors/thickness apply?
-- **Connection stability**: Debugging MCP race conditions
-- **Performance optimization**: Large brain handling
-- **Documentation**: More usage examples and tutorials
-
-Please feel free to submit issues or pull requests.
-
-## License
-
-MIT License - see [LICENSE](LICENSE) file for details.
-
-## Support
-
-- **TheBrain API Documentation**: https://api.bra.in
-- **Issues & Bug Reports**: https://github.com/redmorestudio/thebrain-mcp/issues
-- **Questions**: Open a GitHub discussion
+Get an API key from [TheBrain app](https://app.thebrain.com/api-keys).
 
 ---
 
-**⚠️ Current Recommendation**: Use this server for **content management and organization** with natural language interaction. Don't rely on visual styling features until they're fixed. The core functionality is solid and very useful for managing TheBrain content through conversation!
+## What’s in this repo
+
+- **Library only** — no MCP server. A host app (desktop connector, CLI, or server) can depend on this package and expose tools/resources.
+- **Node.js** — removed; use the Python package.
+- **TheBrain API** — https://api.bra.in
+
+## License
+
+MIT — see [LICENSE](LICENSE).

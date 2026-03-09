@@ -1,0 +1,10 @@
+---
+description: Strict type hinting using the typing module for Python
+globs: ["**/*.py"]
+alwaysApply: false
+---
+
+# Python Type Hints
+
+Mandates strict type hinting using the typing module for all Python functions, methods, and class members.
+- **Type Hinting:** Strictly use the `typing` module. All functions, methods, and class members must have type annotations.

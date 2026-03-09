@@ -1,0 +1,274 @@
+---
+description: Testing best practices and patterns for Python projects
+lastModified: 2026-02-09
+globs: ["**/test_*.py", "**/tests/**/*.py"]
+alwaysApply: false
+---
+
+# Testing Patterns and Best Practices
+
+**Priority**: High
+**Scope**: Test files
+
+## Core Principles
+
+### Test Public API, Not Internals
+
+```python
+# WRONG - testing private methods
+def test_extract_private_method():
+    result = obj._extract_data()  # Private method!
+    assert result == expected
+
+# CORRECT - test through public interface
+def test_public_behavior():
+    obj.process_data()
+    assert obj.get_results() == expected
+```
+
+**Why**: Private methods can change without breaking public contracts. Testing internals creates brittle tests.
+
+### Mock at Narrowest Scope
+
+```python
+# WRONG - global mocking affects all tests
+@patch("subprocess.run")
+def test_conversion():
+    ...
+
+# CORRECT - mock at module level
+@patch("doc_converter_core.converters.pandoc.subprocess.run")
+def test_conversion():
+    ...
+```
+
+**Why**: Global mocks can leak between tests, causing mysterious failures.
+
+### Explicit Assertions
+
+```python
+# WEAK - only checks existence
+assert len(stats["missing"]) > 0
+
+# STRONG - verifies actual content
+assert len(stats["missing"]) > 0
+assert "images/img1.png" in stats["missing"]
+assert "images/img2.png" in stats["missing"]
+```
+
+**Why**: Weak assertions pass for wrong reasons. Strong assertions catch real bugs.
+
+## Test Structure
+
+### Arrange-Act-Assert Pattern
+
+```python
+def test_file_conversion():
+    # Arrange - set up test data
+    input_file = create_temp_file("test content")
+    converter = WordConverter()
+    
+    # Act - perform the action
+    result = converter.convert(input_file)
+    
+    # Assert - verify outcomes
+    assert result.success
+    assert "test content" in result.output
+```
+
+### Use Fixtures for Common Setup
+
+```python
+@pytest.fixture
+def temp_project(tmp_path):
+    """Create a temporary project structure."""
+    project_dir = tmp_path / "test_project"
+    project_dir.mkdir()
+    (project_dir / "docs").mkdir()
+    return project_dir
+
+def test_project_scan(temp_project):
+    scanner = ProjectScanner(temp_project)
+    results = scanner.scan()
+    assert results.doc_count == 0
+```
+
+## Mock Patterns
+
+### Mock External Dependencies
+
+```python
+@pytest.fixture
+def mock_pandoc(mocker):
+    """Mock Pandoc subprocess calls."""
+    mock_run = mocker.patch(
+        "doc_converter_core.converters.pandoc.subprocess.run"
+    )
+    mock_run.return_value = Mock(
+        returncode=0,
+        stdout="converted content",
+        stderr=""
+    )
+    return mock_run
+
+def test_conversion_calls_pandoc(mock_pandoc):
+    converter = PandocConverter()
+    converter.convert("input.docx", "output.rst")
+    mock_pandoc.assert_called_once()
+```
+
+### Mock File System Carefully
+
+```python
+# Prefer tmp_path fixture over mocking
+def test_file_operations(tmp_path):
+    test_file = tmp_path / "test.txt"
+    test_file.write_text("content")
+    
+    result = process_file(test_file)
+    assert result.success
+
+# Only mock when necessary (e.g., permissions)
+@patch("pathlib.Path.exists")
+def test_missing_file_handling(mock_exists):
+    mock_exists.return_value = False
+    with pytest.raises(FileNotFoundError):
+        load_config("/nonexistent/path")
+```
+
+## Exception Testing
+
+### Test Expected Exceptions
+
+```python
+def test_invalid_input_raises():
+    with pytest.raises(ValueError, match="must be positive"):
+        calculate(-1)
+
+def test_file_not_found():
+    with pytest.raises(FileNotFoundError) as exc_info:
+        load_file("/nonexistent")
+    assert "nonexistent" in str(exc_info.value)
+```
+
+### Test Exception Messages
+
+```python
+def test_error_message_is_helpful():
+    with pytest.raises(ValidationError) as exc_info:
+        validate_config({"invalid": "data"})
+    
+    error = exc_info.value
+    assert "invalid" in str(error).lower()
+    assert "expected" in str(error).lower()  # Helpful guidance
+```
+
+## Test Organization
+
+### Group Related Tests
+
+```python
+class TestWordConverter:
+    """Tests for Word document conversion."""
+    
+    def test_converts_simple_document(self):
+        ...
+    
+    def test_preserves_headings(self):
+        ...
+    
+    def test_handles_images(self):
+        ...
+
+class TestWordConverterEdgeCases:
+    """Edge case tests for Word converter."""
+    
+    def test_empty_document(self):
+        ...
+    
+    def test_corrupted_file(self):
+        ...
+```
+
+### Use Descriptive Test Names
+
+```python
+# WRONG - unclear what's being tested
+def test_convert():
+    ...
+
+# CORRECT - describes behavior
+def test_convert_preserves_table_structure():
+    ...
+
+def test_convert_raises_on_password_protected_file():
+    ...
+```
+
+## Parametrized Tests
+
+```python
+@pytest.mark.parametrize("input_format,expected_output", [
+    ("docx", "rst"),
+    ("md", "rst"),
+    ("html", "rst"),
+])
+def test_conversion_to_rst(input_format, expected_output):
+    result = convert(f"test.{input_format}", "rst")
+    assert result.format == expected_output
+
+@pytest.mark.parametrize("invalid_input", [
+    None,
+    "",
+    "   ",
+    [],
+])
+def test_rejects_invalid_input(invalid_input):
+    with pytest.raises(ValueError):
+        process(invalid_input)
+```
+
+## Test Isolation
+
+### Each Test Should Be Independent
+
+```python
+# WRONG - tests depend on order
+class TestCounter:
+    counter = Counter()  # Shared state!
+    
+    def test_increment(self):
+        self.counter.increment()
+        assert self.counter.value == 1
+    
+    def test_decrement(self):
+        self.counter.decrement()
+        assert self.counter.value == 0  # Fails if increment runs first!
+
+# CORRECT - fresh state each test
+class TestCounter:
+    @pytest.fixture
+    def counter(self):
+        return Counter()
+    
+    def test_increment(self, counter):
+        counter.increment()
+        assert counter.value == 1
+    
+    def test_decrement(self, counter):
+        counter.decrement()
+        assert counter.value == -1
+```
+
+## Quick Reference Checklist
+
+Before submitting tests:
+
+- [ ] Tests use public API, not private methods
+- [ ] Mocks are at narrowest scope
+- [ ] Assertions are explicit and verify actual values
+- [ ] Test names describe the behavior being tested
+- [ ] Each test is independent (no shared mutable state)
+- [ ] Edge cases are covered
+- [ ] Exception messages are tested where relevant
+- [ ] Fixtures are used for common setup

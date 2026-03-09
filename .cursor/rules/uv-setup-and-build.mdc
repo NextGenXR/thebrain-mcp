@@ -3,16 +3,936 @@ description: Using UV for Setup of VENV and Build
 alwaysApply: false
 ---
 
-# Using UV for Setup of VENV and Build
+# UV Setup and Build Guide
 
-## Setup VENV and Build
+**Last Updated**: 2026-01-06  
+**Priority**: High  
+**Scope**: All Python projects using UV
 
-**Priority**: High
-**Scope**: Global
+## Table of Contents
 
-- Use UV for virtual environment and dependency setup into a .venv folder
-- Use UV for building applications.
-- Remove Poetry files, features, and settings if any.
+- [Overview](#overview)
+- [Core Principles](#core-principles)
+- [Setup Script Architecture](#setup-script-architecture)
+- [Critical UV Error Handling](#critical-uv-error-handling)
+- [Common Pitfalls](#common-pitfalls)
+- [Python Version Detection](#python-version-detection)
+- [UV Installation](#uv-installation)
+- [Virtual Environment Setup](#virtual-environment-setup)
+- [Dependency Installation](#dependency-installation)
+- [Build Scripts](#build-scripts)
+- [Testing Setup Scripts](#testing-setup-scripts)
+- [Command Reference](#command-reference)
+- [Troubleshooting](#troubleshooting)
 
-- Refer to the UV documentation and ensure that best practices are followed.
-- See https://docs.astral.sh/uv/#projects 
+## Overview
+
+UV is a fast Python package manager that replaces pip, poetry, and other legacy tools. This guide covers best practices learned from real-world implementation and debugging.
+
+**Key Benefits of UV:**
+
+- 10-100x faster than pip
+- Lock file for reproducible builds
+- Built-in virtual environment management
+- Cross-platform support
+
+## Core Principles
+
+1. **Use UV for everything**: venv creation, dependency installation, package management
+2. **Single source of truth**: `pyproject.toml` for dependencies
+3. **Reproducibility**: `uv.lock` for exact dependency versions
+4. **No legacy tools**: Remove Poetry, pipenv, pip-tools if present
+5. **Cross-platform**: Scripts work on Windows, macOS, and Linux
+
+## Setup Script Architecture
+
+### Recommended Pattern: Wrapper + PowerShell
+
+**Best Practice** (learned from doc-composer project):
+
+#### setup.bat (Windows Wrapper - SIMPLE)
+
+```batch
+@echo off
+REM Simple wrapper - NO complex logic here!
+
+echo ==================================================
+echo   Project Setup Script for Windows
+echo ==================================================
+echo.
+
+REM Check if PowerShell is available
+where powershell >nul 2>nul
+if %errorlevel% neq 0 (
+    echo ERROR: PowerShell is not installed or not in PATH
+    pause
+    exit /b 1
+)
+
+echo Running setup script with PowerShell...
+echo.
+
+REM Run PowerShell script with execution policy bypass
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File ".\setup.ps1" %*
+
+if %errorlevel% neq 0 (
+    echo.
+    echo ERROR: Setup script failed with error code %errorlevel%
+    pause
+    exit /b %errorlevel%
+)
+
+echo.
+echo Setup completed successfully!
+pause
+```
+
+#### setup.ps1 (PowerShell - ALL LOGIC HERE)
+
+```powershell
+# Project Setup Script for Windows PowerShell
+# All setup logic goes here - clean, maintainable, no encoding issues
+
+param(
+    [switch]$Force = $false
+)
+
+# CRITICAL: Use "Continue" not "Stop" for UV compatibility
+$ErrorActionPreference = "Continue"
+
+Write-Host "============================================" -ForegroundColor Cyan
+Write-Host "   Project Setup" -ForegroundColor Cyan
+Write-Host "============================================" -ForegroundColor Cyan
+Write-Host ""
+
+# ... all setup logic here ...
+```
+
+#### setup.sh (POSIX Shell - Cross-platform)
+
+```bash
+#!/bin/bash
+# Project Setup Script for Linux/macOS
+
+set -e  # Exit on error
+
+echo "============================================"
+echo "   Project Setup"
+echo "============================================"
+echo ""
+
+# Python Version Detection
+PYTHON_CMD=""
+for cmd in python3 python; do
+    if command -v "$cmd" >/dev/null 2>&1; then
+        version=$("$cmd" -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')" 2>/dev/null || echo "")
+        if [ -n "$version" ]; then
+            major=$(echo "$version" | cut -d. -f1)
+            minor=$(echo "$version" | cut -d. -f2)
+            if [ "$major" -eq 3 ] && [ "$minor" -ge 12 ]; then
+                PYTHON_CMD="$cmd"
+                echo "[1/4] Found Python $version using: $cmd"
+                break
+            fi
+        fi
+    fi
+done
+
+if [ -z "$PYTHON_CMD" ]; then
+    echo "ERROR: Python 3.12+ not found!"
+    echo "Download from: https://www.python.org/"
+    exit 1
+fi
+
+# UV Installation Check
+echo "[2/4] Checking UV installation..."
+if ! command -v uv >/dev/null 2>&1; then
+    echo "  UV not found. Installing..."
+    # Download installer first, then execute
+    TEMP_FILE=$(mktemp)
+    if curl -fsSL https://astral.sh/uv/install.sh -o "$TEMP_FILE"; then
+        # TODO: Add checksum verification per security policy
+        chmod +x "$TEMP_FILE"
+        "$TEMP_FILE"
+        rm -f "$TEMP_FILE"
+    else
+        echo "  ERROR: Failed to download UV installer"
+        exit 1
+    fi
+fi
+
+# Virtual Environment Setup
+echo "[3/4] Setting up virtual environment..."
+if [ ! -d ".venv" ]; then
+    uv venv --python "$PYTHON_CMD"
+fi
+
+# Dependency Installation
+echo "[4/4] Installing dependencies..."
+uv lock
+uv sync
+
+echo ""
+echo "Setup completed successfully!"
+```
+
+### Why This Pattern?
+
+✅ **Avoids encoding issues**: Windows batch files can't handle Unicode/emojis  
+✅ **Better error handling**: PowerShell has proper try/catch  
+✅ **Easier maintenance**: One language for all logic  
+✅ **Cross-platform ready**: Separate `.sh` for Unix, same pattern  
+✅ **No special character problems**: Pipes, redirects work properly
+
+### AVOID: Complex Batch Files
+
+❌ **Anti-pattern**: Putting complex logic in `.bat` files
+
+```batch
+# ❌ BAD: This causes "... was unexpected at this time" error
+echo ✅ Success!
+
+# ❌ BAD: Complex UV commands in batch
+powershell -c "irm url | iex"  # Pipe parsed by batch!
+
+# ✅ GOOD: Simple wrapper only
+powershell.exe -ExecutionPolicy Bypass -File ".\setup.ps1"
+```
+
+## Critical UV Error Handling
+
+### ⚠️ The UV stderr Problem
+
+**UV writes informational messages to stderr, which PowerShell treats as errors!**
+
+This is the #1 cause of setup script failures.
+
+#### ❌ WRONG Approaches
+
+```powershell
+# ❌ Still treats stderr as error
+& uv sync 2>$null
+
+# ❌ Fails on informational messages
+& uv lock
+# PowerShell sees "Resolved 162 packages in 2ms" on stderr and fails!
+```
+
+#### ✅ CORRECT Approach
+
+```powershell
+# ✅ BEST: Use "Continue" and assign output to $null
+$ErrorActionPreference = "Continue"  # Not "Stop"!
+
+# Assign output to $null (doesn't trigger error handling)
+$null = & uv lock 2>&1
+$null = & uv sync 2>&1
+if ($LASTEXITCODE -ne 0) { exit 1 }
+
+# ✅ ALSO GOOD: Let UV output show, check exit code explicitly
+& uv sync
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "ERROR: UV sync failed" -ForegroundColor Red
+    exit 1
+}
+```
+
+#### Critical: ErrorActionPreference Setting
+
+```powershell
+# ❌ BAD: "Stop" treats stderr as terminating error
+$ErrorActionPreference = "Stop"
+& uv sync 2>&1 | Out-Null  # FAILS!
+
+# ✅ GOOD: "Continue" allows checking $LASTEXITCODE
+$ErrorActionPreference = "Continue"
+$null = & uv sync 2>&1     # Works!
+if ($LASTEXITCODE -ne 0) { exit 1 }
+```
+
+#### Real-World Example (setup.ps1)
+
+```powershell
+# PowerShell script header - CRITICAL setting!
+$ErrorActionPreference = "Continue"  # Not "Stop"!
+
+# Install dependencies sequence
+Write-Host "Installing dependencies..." -ForegroundColor Cyan
+
+# Update lock file (writes to stderr on success!)
+$null = & uv lock 2>&1
+
+# Install base dependencies
+$null = & uv sync 2>&1
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "ERROR: Failed to install dependencies" -ForegroundColor Red
+    exit 1
+}
+
+Write-Host "Dependencies installed successfully!" -ForegroundColor Green
+```
+
+## Common Pitfalls
+
+### 1. Emoji Characters in Batch Files
+
+**Problem**: Emoji characters in `.bat` files cause syntax errors.
+
+```batch
+# ❌ NEVER do this in .bat files
+echo ✅ Done!
+echo 📦 Installing...
+echo ⚠️ Warning!
+
+# ERROR: "... was unexpected at this time"
+```
+
+**Solution**: Use plain text or move to PowerShell
+
+```batch
+# ✅ Plain text in batch
+echo Done!
+echo Installing...
+echo Warning!
+```
+
+```powershell
+# ✅ Emojis work fine in PowerShell
+Write-Host "Done!" -ForegroundColor Green
+Write-Host "Installing..." -ForegroundColor Cyan
+```
+
+### 2. Pipe Character in Batch
+
+**Problem**: Pipes `|` are interpreted by batch parser, not passed to PowerShell.
+
+```batch
+# ❌ BAD: Pipe is parsed by batch file
+powershell -c "irm https://url | iex"
+# ERROR: "| was unexpected at this time"
+
+# ✅ GOOD: Use -Command with script block
+powershell -Command "& {irm https://url | iex}"
+
+# ✅ BETTER: Put command in .ps1 file
+powershell -ExecutionPolicy Bypass -File ".\install.ps1"
+```
+
+### 3. Double Dash Parameters
+
+**Problem**: Double-dash parameters can cause issues in batch context.
+
+```batch
+# ❌ May fail in some contexts
+uv --version
+
+# ✅ Use call keyword
+call uv --version
+
+# ✅ Or use single-dash alias
+uv -V
+```
+
+### 4. Treating Warnings as Errors
+
+**Problem**: UV's informational output on stderr treated as fatal error.
+
+```powershell
+# ❌ Fails because UV writes to stderr
+try {
+    & uv sync
+} catch {
+    # This catches informational messages!
+    exit 1
+}
+
+# ✅ Check exit code only
+$null = & uv sync 2>&1
+if ($LASTEXITCODE -ne 0) {
+    exit 1
+}
+```
+
+### 5. Not Handling Delayed Expansion
+
+**Problem**: Variable expansion timing in batch files.
+
+```batch
+# ❌ BAD: Variable not expanded in loop
+for %%f in (*.txt) do (
+    set COUNT=%COUNT%+1
+    echo %COUNT%  # Always shows initial value!
+)
+
+# ✅ GOOD: Enable delayed expansion
+setlocal enabledelayedexpansion
+for %%f in (*.txt) do (
+    set /a COUNT+=1
+    echo !COUNT!  # Use ! instead of %
+)
+```
+
+## Python Version Detection
+
+### Check Multiple Locations in Order
+
+```powershell
+function Test-PythonVersion {
+    param([string]$PythonCmd)
+    
+    try {
+        $version = & $PythonCmd -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}')" 2>$null
+        if ($LASTEXITCODE -eq 0) {
+            $versionParts = $version -split '\.'
+            $major = [int]$versionParts[0]
+            $minor = [int]$versionParts[1]
+            
+            # Accept Python 3.12 or higher
+            if ($major -eq 3 -and $minor -ge 12) {
+                return @{
+                    Valid = $true
+                    Version = $version
+                    Command = $PythonCmd
+                }
+            }
+        }
+    }
+    catch {
+        # Command not found
+    }
+    
+    return @{ Valid = $false }
+}
+```
+
+### Search Order
+
+1. **PYTHON_EXE environment variable** (project-specific)
+2. **Common commands**: `python`, `python3`, `py`
+3. **Common installation paths**:
+   - `C:\Python312\python.exe`
+   - `C:\Program Files\Python312\python.exe`
+   - `%LOCALAPPDATA%\Programs\Python\Python312\python.exe`
+4. **Fail with clear error** if not found
+
+### Example Implementation
+
+```powershell
+Write-Host "[1/4] Checking for Python 3.12 or higher..." -ForegroundColor Cyan
+
+$pythonCmd = $null
+
+# 1. Check PYTHON_EXE
+if ($env:PYTHON_EXE) {
+    Write-Host "  Checking PYTHON_EXE environment variable..." -ForegroundColor Gray
+    $result = Test-PythonVersion -PythonCmd $env:PYTHON_EXE
+    if ($result.Valid) {
+        $pythonCmd = $result.Command
+        Write-Host "  Found Python $($result.Version)" -ForegroundColor Green
+    }
+}
+
+# 2. Check common commands
+if (-not $pythonCmd) {
+    foreach ($cmd in @("python", "python3", "py")) {
+        $result = Test-PythonVersion -PythonCmd $cmd
+        if ($result.Valid) {
+            $pythonCmd = $result.Command
+            Write-Host "  Found Python $($result.Version) using: $cmd" -ForegroundColor Green
+            break
+        }
+    }
+}
+
+# 3. Fail if not found
+if (-not $pythonCmd) {
+    Write-Host ""
+    Write-Host "ERROR: Python 3.12+ not found!" -ForegroundColor Red
+    Write-Host "Download from: https://www.python.org/" -ForegroundColor Yellow
+    exit 1
+}
+```
+
+## UV Installation
+
+### Check and Auto-Install Pattern
+
+```powershell
+Write-Host "[2/4] Checking UV installation..." -ForegroundColor Cyan
+
+$uvInstalled = Get-Command uv -ErrorAction SilentlyContinue
+
+if (-not $uvInstalled) {
+    Write-Host "  UV not found. Installing..." -ForegroundColor Yellow
+    
+    try {
+        # Download installer first for security verification
+        $tempFile = Join-Path $env:TEMP "uv-install.ps1"
+        Invoke-WebRequest -Uri "https://astral.sh/uv/install.ps1" -OutFile $tempFile
+        
+        # TODO: Verify checksum/signature before execution per org policy
+        # Example: $hash = Get-FileHash $tempFile -Algorithm SHA256
+        # if ($hash.Hash -ne $expectedHash) { throw "Checksum mismatch" }
+        
+        # Execute installer
+        . $tempFile
+        Remove-Item $tempFile -Force
+        
+        # Refresh PATH for current session
+        $env:PATH = [System.Environment]::GetEnvironmentVariable("PATH", "User") + ";" + 
+                    [System.Environment]::GetEnvironmentVariable("PATH", "Machine")
+        
+        # Verify installation
+        $uvInstalled = Get-Command uv -ErrorAction SilentlyContinue
+        if ($uvInstalled) {
+            Write-Host "  UV installed successfully!" -ForegroundColor Green
+        } else {
+            Write-Host "  WARNING: UV installed but not in PATH" -ForegroundColor Yellow
+            Write-Host "  Please restart your terminal" -ForegroundColor Yellow
+        }
+    }
+    catch {
+        Write-Host "  ERROR: Failed to install UV: $_" -ForegroundColor Red
+        exit 1
+    }
+} else {
+    Write-Host "  UV is already installed" -ForegroundColor Green
+    $uvVersion = & uv --version 2>$null
+    Write-Host "  Version: $uvVersion" -ForegroundColor Gray
+}
+```
+
+## Virtual Environment Setup
+
+### Standard UV Venv Pattern
+
+```powershell
+Write-Host "[3/4] Setting up virtual environment..." -ForegroundColor Cyan
+
+if (Test-Path ".venv") {
+    if ($Force) {
+        Write-Host "  Removing existing .venv..." -ForegroundColor Yellow
+        Remove-Item -Recurse -Force ".venv"
+    } else {
+        Write-Host "  Virtual environment already exists" -ForegroundColor Green
+        
+        # Verify Python version (accept >= 3.12)
+        if (Test-Path ".venv\Scripts\python.exe") {
+            $venvVersion = & ".venv\Scripts\python.exe" -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')" 2>$null
+            
+            if ($venvVersion) {
+                $parts = $venvVersion -split '\.'
+                $major = [int]$parts[0]
+                $minor = [int]$parts[1]
+                
+                if ($major -eq 3 -and $minor -ge 12) {
+                    Write-Host "  Using existing Python $venvVersion venv" -ForegroundColor Green
+                } else {
+                    Write-Host "  WARNING: Venv is Python $venvVersion, requires >= 3.12" -ForegroundColor Yellow
+                    Write-Host "  Run with -Force to recreate" -ForegroundColor Yellow
+                }
+            }
+        }
+    }
+}
+
+if (-not (Test-Path ".venv")) {
+    Write-Host "  Creating new virtual environment..." -ForegroundColor Gray
+    & uv venv --python $pythonCmd
+    
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "  ERROR: Failed to create venv" -ForegroundColor Red
+        exit 1
+    }
+    
+    Write-Host "  Virtual environment created!" -ForegroundColor Green
+}
+```
+
+## Dependency Installation
+
+### Installation Sequence
+
+```powershell
+Write-Host "[4/4] Installing dependencies..." -ForegroundColor Cyan
+
+# 1. Update lock file (UV writes to stderr even on success!)
+Write-Host "  Updating lock file..." -ForegroundColor Gray
+$null = & uv lock 2>&1
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "  ERROR: Failed to update lock file" -ForegroundColor Red
+    exit 1
+}
+
+# 2. Install base dependencies
+Write-Host "  Installing base dependencies..." -ForegroundColor Gray
+$null = & uv sync 2>&1
+
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "  ERROR: Failed to install base dependencies" -ForegroundColor Red
+    exit 1
+}
+
+Write-Host "  Base dependencies installed!" -ForegroundColor Green
+
+# 3. Install optional extras
+Write-Host "  Installing build tools..." -ForegroundColor Gray
+$null = & uv sync --extra build 2>&1
+
+if ($LASTEXITCODE -eq 0) {
+    Write-Host "  Build tools installed!" -ForegroundColor Green
+} else {
+    Write-Host "  WARNING: Some build tools failed" -ForegroundColor Yellow
+}
+
+# 4. Install Python version-specific extras (if needed)
+$venvPython = ".venv\Scripts\python.exe"
+$null = & $venvPython -c "import sys; sys.exit(0 if sys.version_info[:2] == (3, 12) else 1)" 2>&1
+
+if ($LASTEXITCODE -eq 0) {
+    Write-Host "  Installing Python 3.12 extras..." -ForegroundColor Gray
+    $null = & uv sync --extra pelia 2>&1
+    
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host "  Python 3.12 extras installed!" -ForegroundColor Green
+    } else {
+        Write-Host "  WARNING: Some extras failed" -ForegroundColor Yellow
+    }
+}
+```
+
+## Build Scripts
+
+### Build Script Requirements
+
+1. **Verify spec file exists**: Don't proceed without spec file
+2. **Use UV for tools**: `uv run --extra build tool`
+3. **Auto-install dependencies**: Check and install if missing
+4. **Clear error messages**: Tell users what to do
+5. **Handle clean/rebuild**: Support clean builds
+
+### Example Build Script (batch)
+
+```batch
+@echo off
+REM Build script for Windows
+
+:build
+echo Building executable...
+
+REM Check if spec file exists
+if not exist "myapp.spec" (
+    echo ERROR: Spec file "myapp.spec" not found!
+    echo.
+    echo The spec file should be in the project root.
+    echo If missing, restore from version control.
+    echo.
+    exit /b 1
+)
+
+REM Ensure build dependencies are installed
+echo Installing build dependencies...
+call uv sync --extra build
+if errorlevel 1 (
+    echo ERROR: Failed to install build dependencies
+    exit /b 1
+)
+
+REM Clean previous builds
+echo Cleaning previous build artifacts...
+if exist build rmdir /s /q build
+if exist dist rmdir /s /q dist
+
+REM Run PyInstaller through UV
+echo Running PyInstaller...
+uv run --extra build pyinstaller myapp.spec --noconfirm --clean
+
+if errorlevel 1 (
+    echo ERROR: Build failed!
+    exit /b 1
+)
+
+echo Build completed successfully!
+goto end
+
+:end
+```
+
+### Build Script (PowerShell)
+
+```powershell
+# Build script for Windows PowerShell
+
+Write-Host "Building executable..." -ForegroundColor Cyan
+
+# Check spec file
+if (-not (Test-Path "myapp.spec")) {
+    Write-Host "ERROR: Spec file 'myapp.spec' not found!" -ForegroundColor Red
+    Write-Host "Restore from version control" -ForegroundColor Yellow
+    exit 1
+}
+
+# Install build dependencies
+Write-Host "Installing build dependencies..." -ForegroundColor Gray
+$null = & uv sync --extra build 2>&1
+
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "ERROR: Failed to install build dependencies" -ForegroundColor Red
+    exit 1
+}
+
+# Clean previous builds
+Write-Host "Cleaning previous builds..." -ForegroundColor Gray
+if (Test-Path "build") { Remove-Item -Recurse -Force "build" }
+if (Test-Path "dist") { Remove-Item -Recurse -Force "dist" }
+
+# Run PyInstaller
+Write-Host "Running PyInstaller..." -ForegroundColor Gray
+& uv run --extra build pyinstaller myapp.spec --noconfirm --clean
+
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "ERROR: Build failed!" -ForegroundColor Red
+    exit 1
+}
+
+Write-Host "Build completed successfully!" -ForegroundColor Green
+```
+
+## Testing Setup Scripts
+
+### Manual Testing Checklist
+
+Test your setup scripts in these scenarios:
+
+- [ ] **Fresh install**: No `.venv` directory exists
+- [ ] **Existing correct venv**: `.venv` with Python 3.12+
+- [ ] **Existing wrong venv**: `.venv` with different Python version
+- [ ] **UV installed**: UV already in PATH
+- [ ] **UV not installed**: UV needs to be installed
+- [ ] **Python in PATH**: `python` command works
+- [ ] **Python via PYTHON_EXE**: Only `$env:PYTHON_EXE` set
+- [ ] **Different directories**: Run from subdirectories
+- [ ] **Fresh terminal**: After install, before PATH refresh
+- [ ] **With -Force flag**: Force recreation of venv
+
+### Automated Testing
+
+```powershell
+# test_setup.ps1
+Write-Host "Testing setup script..." -ForegroundColor Cyan
+
+# Test 1: Python detection
+$result = Test-PythonVersion -PythonCmd "python"
+if (-not $result.Valid) {
+    Write-Host "FAIL: Python detection" -ForegroundColor Red
+    exit 1
+}
+Write-Host "PASS: Python detection" -ForegroundColor Green
+
+# Test 2: UV available
+$uv = Get-Command uv -ErrorAction SilentlyContinue
+if (-not $uv) {
+    Write-Host "FAIL: UV not found" -ForegroundColor Red
+    exit 1
+}
+Write-Host "PASS: UV found" -ForegroundColor Green
+
+# Test 3: Venv created
+if (-not (Test-Path ".venv")) {
+    Write-Host "FAIL: Venv not created" -ForegroundColor Red
+    exit 1
+}
+Write-Host "PASS: Venv created" -ForegroundColor Green
+
+# Test 4: Dependencies installed (generic test)
+$testImport = & ".venv\Scripts\python.exe" -c "import sys; print('OK')" 2>$null
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "FAIL: Dependencies not installed" -ForegroundColor Red
+    exit 1
+}
+Write-Host "PASS: Dependencies installed" -ForegroundColor Green
+
+Write-Host ""
+Write-Host "All tests passed!" -ForegroundColor Green
+```
+
+## Command Reference
+
+### UV Common Commands
+
+```bash
+# Virtual Environment
+uv venv                           # Create venv with system Python
+uv venv --python python3.12       # Create with specific Python version
+uv venv --python /path/to/python  # Create with Python at path
+
+# Dependency Installation
+uv sync                           # Install base dependencies
+uv sync --extra build             # Install with 'build' extra
+uv sync --all-extras              # Install all extras
+uv lock                           # Update lock file
+
+# Running Python
+uv run python script.py           # Run Python in venv
+uv run --extra build pyinstaller  # Run with extra dependencies
+uv run pytest                     # Run pytest in venv
+
+# Package Management
+uv add package-name               # Add dependency to pyproject.toml
+uv add --dev package-name         # Add dev dependency
+uv remove package-name            # Remove dependency
+uv pip list                       # List installed packages
+uv pip show package-name          # Show package info
+
+# Other
+uv --version                      # Show UV version
+uv -V                            # Short version
+uv help                          # Show help
+```
+
+### pyproject.toml Structure
+
+```toml
+[project]
+name = "your-project"
+version = "0.1.0"
+description = "Project description"
+requires-python = ">=3.12"
+dependencies = [
+    "package>=1.0.0",
+    # ... core dependencies
+]
+
+[project.optional-dependencies]
+build = [
+    "PyInstaller>=6.0.0",
+    # ... build tools
+]
+dev = [
+    "pytest>=7.0.0",
+    # ... development tools
+]
+
+[tool.uv]
+# UV-specific configuration (optional)
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+```
+
+## Troubleshooting
+
+### Issue: "... was unexpected at this time"
+
+**Cause**: Emoji or special Unicode characters in batch file
+
+**Solution**: Remove emojis or move logic to PowerShell
+
+```batch
+# ❌ Causes error
+echo ✅ Done
+
+# ✅ Fix
+echo Done
+```
+
+### Issue: Setup fails with "Resolved X packages" error
+
+**Cause**: UV writes informational messages to stderr, which PowerShell treats as errors when `$ErrorActionPreference = "Stop"`
+
+**Error Message**:
+
+```
+uv.exe : Resolved 162 packages in 2ms
+At setup.ps1:173 char:1
++ & uv lock 2>&1 | Out-Null
++ ~~~~~~~~~~~~~~
+   + CategoryInfo          : NotSpecified: (Resolved 162 packages...)
+   + FullyQualifiedErrorId : NativeCommandError
+```
+
+**Solution (BEST)**: Use `$ErrorActionPreference = "Continue"` and assign to `$null`
+
+```powershell
+# ✅ BEST: Set proper error preference
+$ErrorActionPreference = "Continue"  # Not "Stop"!
+
+# Assign output to $null (doesn't trigger error handling)
+$null = & uv lock 2>&1
+$null = & uv sync 2>&1
+
+# Check exit code explicitly
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "ERROR: UV failed" -ForegroundColor Red
+    exit 1
+}
+```
+
+### Issue: UV not found after installation
+
+**Cause**: PATH not refreshed in current session
+
+**Solution**: Refresh PATH or restart terminal
+
+```powershell
+# Refresh PATH
+$env:PATH = [System.Environment]::GetEnvironmentVariable("PATH", "User") + ";" +
+            [System.Environment]::GetEnvironmentVariable("PATH", "Machine")
+
+# Or just restart terminal
+```
+
+### Issue: Wrong Python version in venv
+
+**Cause**: Venv created with different Python
+
+**Solution**: Recreate with correct Python
+
+```powershell
+# Delete and recreate
+Remove-Item -Recurse -Force ".venv"
+uv venv --python python3.12
+```
+
+### Issue: Build fails "PyInstaller not found"
+
+**Cause**: Build extras not installed
+
+**Solution**: Install build dependencies
+
+```bash
+uv sync --extra build
+```
+
+### Issue: Pipe character causes batch error
+
+**Cause**: Pipe parsed by batch, not PowerShell
+
+**Solution**: Use `-Command` with script block
+
+```batch
+# ❌ Fails
+powershell -c "cmd | other"
+
+# ✅ Fix
+powershell -Command "& {cmd | other}"
+```
+
+## References
+
+- **UV Documentation**: https://docs.astral.sh/uv/
+- **UV Projects Guide**: https://docs.astral.sh/uv/#projects  
+- **UV GitHub**: https://github.com/astral-sh/uv
+- **PyInstaller**: https://pyinstaller.org/
+
+## Version History
+
+- **2024-11-12**: Initial comprehensive guide based on real-world debugging
+  - Added wrapper pattern recommendation
+  - Documented UV stderr issue and solutions
+  - Common pitfalls section
+  - Complete examples
+  - POSIX shell support added
+  - Security improvements for UV installer
+  - Python version detection accepts >= 3.12
